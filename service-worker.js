@@ -5,19 +5,19 @@
 
 const CACHE_NAME = 'prompt-forge-v1.0.0';
 const ASSETS_TO_CACHE = [
-    '/',
-    '/index.html',
-    '/manifest.json',
-    '/css/style.css',
-    '/js/app.js',
-    '/js/prompts.js',
-    '/js/ui.js',
-    '/js/storage.js',
-    '/js/utils.js',
-    '/icons/icon-192.png',
-    '/icons/icon-512.png',
-    '/icons/apple-touch-icon.png',
-    '/icons/favicon.ico'
+    './',
+    './index.html',
+    './manifest.json',
+    './css/style.css',
+    './js/app.js',
+    './js/prompts.js',
+    './js/ui.js',
+    './js/storage.js',
+    './js/utils.js',
+    './icons/icon-192.png',
+    './icons/icon-512.png',
+    './icons/apple-touch-icon.png',
+    './icons/favicon.ico'
 ];
 
 // Install Event - Cache assets
