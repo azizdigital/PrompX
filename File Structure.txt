@@ -1,0 +1,20 @@
+promptforge-oim/
+├── index.html
+├── manifest.json
+├── service-worker.js
+├── README.md
+├── css/
+│   └── style.css
+├── js/
+│   ├── app.js
+│   ├── prompts.js
+│   ├── ui.js
+│   ├── storage.js
+│   ├── clipboard.js
+│   └── utils.js
+├── icons/
+│   ├── icon-192.png
+│   ├── icon-512.png
+│   └── favicon.png
+└── screenshots/
+    └── home.png
