@@ -1,149 +1,83 @@
 /**
- * PromptForge OIM - UI Rendering Engine
+ * Aziz Prompt Forge - UI Manager
  * Handles all UI rendering and updates
  */
 
 const UI = {
     /**
-     * Render home screen
+     * MAIN VIEW RENDERING
+     */
+
+    /**
+     * Render home page with categories
      */
     renderHome() {
-        const mainContent = document.getElementById('mainContent');
+        const content = document.getElementById('app-content');
         
-        // Update header
-        document.getElementById('headerTitle').textContent = 'PromptForge OIM';
-        document.getElementById('headerSubtitle').textContent = 'AI Prompt Builder for Offshore Operations';
-        document.getElementById('backBtn').style.display = 'none';
-        
-        // Get favorites and usage stats
-        const favorites = Storage.getFavorites();
-        const mostUsed = Storage.getMostUsed(5);
-        
-        // Build home screen HTML
-        let html = '<div class="home-screen">';
-        
-        // Search bar
-        html += `
-            <div class="search-container">
-                <svg class="search-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="8" cy="8" r="6"/>
-                    <path d="M14 14l4 4"/>
-                </svg>
-                <input type="text" id="searchInput" class="search-input" placeholder="Search prompts...">
+        // Hero section
+        const heroHtml = `
+            <div class="hero fade-in">
+                <div class="hero-icon">🔨</div>
+                <h2 class="hero-title">Aziz Prompt Forge</h2>
+                <p class="hero-subtitle">All Your AI Prompts. One Smart Hub.</p>
             </div>
         `;
-        
-        // Favorites section (if any)
-        if (favorites.length > 0) {
-            html += '<div class="section-header">';
-            html += '<h2 class="section-title">⭐ Favorites <span class="section-count">' + favorites.length + '</span></h2>';
-            html += '</div>';
-            html += '<div class="prompts-list">';
-            
-            favorites.slice(0, 3).forEach(promptId => {
-                const prompt = PromptsData.getPromptById(promptId);
-                if (prompt) {
-                    html += this.renderPromptItem(prompt, true);
-                }
-            });
-            
-            html += '</div>';
-        }
-        
-        // Most used section (if any)
-        if (mostUsed.length > 0) {
-            html += '<div class="section-header mt-xl">';
-            html += '<h2 class="section-title">📊 Most Used This Week</h2>';
-            html += '</div>';
-            html += '<div class="prompts-list">';
-            
-            mostUsed.forEach((item, index) => {
-                const prompt = PromptsData.getPromptById(item.promptId);
-                if (prompt) {
-                    html += this.renderPromptItem(prompt, false, index + 1, item.count);
-                }
-            });
-            
-            html += '</div>';
-        }
-        
-        // Categories section
-        html += '<div class="section-header mt-xl">';
-        html += '<h2 class="section-title">📁 Categories</h2>';
-        html += '</div>';
-        html += '<div class="categories-grid">';
-        
-        PromptsData.categories.forEach(category => {
-            const promptCount = PromptsData.getPromptsByCategory(category.id).length;
-            html += this.renderCategoryCard(category, promptCount);
-        });
-        
-        html += '</div>'; // End categories-grid
-        html += '</div>'; // End home-screen
-        
-        mainContent.innerHTML = html;
-        
-        // Attach event listeners
-        this.attachHomeEventListeners();
-    },
 
-    /**
-     * Render category card
-     */
-    renderCategoryCard(category, promptCount) {
-        return `
-            <div class="category-card" data-category-id="${category.id}">
-                <div class="category-header">
-                    <div class="category-icon">${category.icon}</div>
-                    <div class="category-info">
-                        <h3 class="category-name">${category.name}</h3>
-                        <span class="category-count-badge">${promptCount} prompts</span>
-                    </div>
+        // Search box
+        const searchHtml = `
+            <div class="search-container fade-in">
+                <div class="search-box">
+                    <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.35-4.35"></path>
+                    </svg>
+                    <input type="text" class="search-input" id="search-prompts" placeholder="Search prompts...">
                 </div>
-                <p class="category-description">${category.description}</p>
             </div>
         `;
+
+        // Categories
+        const categoriesHtml = this._renderCategoriesGrid();
+
+        content.innerHTML = heroHtml + searchHtml + categoriesHtml;
+
+        // Add search listener
+        const searchInput = document.getElementById('search-prompts');
+        if (searchInput) {
+            searchInput.addEventListener('input', Utils.debounce((e) => {
+                this.handleSearch(e.target.value);
+            }, 300));
+        }
     },
 
     /**
-     * Render prompt item (for lists)
+     * Render categories grid
      */
-    renderPromptItem(prompt, showFavorite = false, rank = null, usageCount = null) {
-        const isFavorite = Storage.isFavorite(prompt.id);
-        const typeClass = prompt.type.replace('-', '');
-        const typeLabel = {
-            'ai-only': 'AI',
-            'hybrid': 'Hybrid',
-            'template-only': 'Template'
-        }[prompt.type] || 'AI';
+    _renderCategoriesGrid() {
+        const categories = PromptsData.categories;
+        const isMobile = window.innerWidth < 768;
         
-        let html = `
-            <div class="prompt-item" data-prompt-id="${prompt.id}">
-                ${rank ? `<div style="font-size: 1.5rem; font-weight: 700; color: var(--color-text-tertiary); margin-right: var(--spacing-sm);">${rank}</div>` : ''}
-                <div class="prompt-icon-badge">${prompt.icon}</div>
-                <div class="prompt-content">
-                    <div class="prompt-header">
-                        <span class="prompt-title">${prompt.title}</span>
-                        <span class="prompt-type-badge ${typeClass}">${typeLabel}</span>
+        const containerClass = isMobile ? '' : 'category-grid';
+        
+        const cardsHtml = categories.map(cat => {
+            const prompts = PromptsData.getPromptsByCategory(cat.id);
+            return `
+                <div class="card fade-in" data-category="${cat.id}">
+                    <div class="card-header">
+                        <div class="card-icon" style="background: ${cat.color}20;">${cat.icon}</div>
+                        <h3 class="card-title">${cat.name}</h3>
+                        <span class="card-count">${prompts.length}</span>
                     </div>
-                    <p class="prompt-description">${prompt.description}</p>
-                    ${usageCount ? `<div class="prompt-meta"><span class="prompt-usage">Used ${usageCount}x</span></div>` : ''}
+                    <p class="card-description">${cat.description}</p>
                 </div>
-                ${showFavorite || isFavorite ? `
-                    <button class="btn-favorite ${isFavorite ? 'active' : ''}" data-prompt-id="${prompt.id}">
-                        <svg width="20" height="20" viewBox="0 0 20 20" fill="${isFavorite ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2">
-                            <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
-                        </svg>
-                    </button>
-                ` : ''}
-            </div>
-        `;
-        
-        return html;
+            `;
+        }).join('');
+
+        return `<div class="${containerClass}">${cardsHtml}</div>`;
     },
 
     /**
-     * Render category view (list of prompts in category)
+     * Render category view with prompts list
      */
     renderCategory(categoryId) {
         const category = PromptsData.getCategoryById(categoryId);
@@ -153,578 +87,670 @@ const UI = {
             this.renderHome();
             return;
         }
+
+        const content = document.getElementById('app-content');
         
-        const mainContent = document.getElementById('mainContent');
-        
-        // Update header
-        document.getElementById('headerTitle').textContent = category.name;
-        document.getElementById('headerSubtitle').textContent = `${prompts.length} prompts`;
-        document.getElementById('backBtn').style.display = 'flex';
-        
-        // Build HTML
-        let html = '<div class="category-view">';
-        
-        // Search within category
-        html += `
-            <div class="search-container">
-                <svg class="search-icon" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="8" cy="8" r="6"/>
-                    <path d="M14 14l4 4"/>
-                </svg>
-                <input type="text" id="categorySearchInput" class="search-input" placeholder="Search in ${category.name}...">
+        const html = `
+            <div class="fade-in">
+                <div class="card" style="margin-bottom: var(--spacing-lg);">
+                    <div class="card-header">
+                        <div class="card-icon" style="background: ${category.color}20;">${category.icon}</div>
+                        <h3 class="card-title">${category.name}</h3>
+                        <span class="card-count">${prompts.length}</span>
+                    </div>
+                    <p class="card-description">${category.description}</p>
+                </div>
+
+                <ul class="list">
+                    ${prompts.map(prompt => `
+                        <li class="list-item fade-in" data-prompt-id="${prompt.id}">
+                            <span class="list-item-icon">${prompt.icon}</span>
+                            <div class="list-item-content">
+                                <div class="list-item-title">${prompt.title}</div>
+                                <div class="list-item-subtitle">${prompt.description}</div>
+                            </div>
+                            ${Storage.isFavorite(prompt.id) ? 
+                                '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" style="color: var(--primary);"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>' 
+                                : ''}
+                        </li>
+                    `).join('')}
+                </ul>
             </div>
         `;
-        
-        html += '<div class="prompts-list" id="promptsList">';
-        
-        prompts.forEach(prompt => {
-            html += this.renderPromptItem(prompt, true);
-        });
-        
-        html += '</div>';
-        html += '</div>';
-        
-        mainContent.innerHTML = html;
-        
-        // Save last visited category
-        Storage.saveLastCategory(categoryId);
-        
-        // Attach event listeners
-        this.attachCategoryEventListeners(categoryId);
+
+        content.innerHTML = html;
     },
 
     /**
-     * Render prompt input form
+     * Render prompt form
      */
     renderPromptForm(promptId) {
         const prompt = PromptsData.getPromptById(promptId);
-        
         if (!prompt) {
             this.renderHome();
             return;
         }
-        
-        const mainContent = document.getElementById('mainContent');
-        
-        // Update header
-        document.getElementById('headerTitle').textContent = prompt.title;
-        document.getElementById('headerSubtitle').textContent = prompt.description;
-        document.getElementById('backBtn').style.display = 'flex';
-        
-        // Get platform info for auto-fill
-        const platformInfo = Utils.getPlatformInfo();
-        
-        let html = '<div class="prompt-form-view">';
-        html += '<form id="promptForm" class="prompt-form">';
-        
-        // Render each input field
-        prompt.inputs.forEach(input => {
-            html += this.renderInputField(input, platformInfo);
-        });
-        
-        // Generate button
-        html += `
-            <div class="form-group mt-xl">
-                <button type="submit" class="btn btn-primary btn-block">
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-                        <path d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586L7.707 9.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 10.586V7z"/>
-                    </svg>
-                    Generate ${prompt.type === 'template-only' ? 'Report' : 'Prompt'}
-                </button>
-            </div>
+
+        const content = document.getElementById('app-content');
+        const isFavorite = Storage.isFavorite(promptId);
+
+        let formHtml = `
+            <div class="fade-in">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-icon" style="background: var(--primary-light);">${prompt.icon}</span>
+                        <h3 class="card-title">${prompt.title}</h3>
+                        <button class="btn-icon" id="favorite-btn" data-prompt-id="${promptId}">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="${isFavorite ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" style="color: ${isFavorite ? 'var(--primary)' : 'currentColor'};">
+                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <p class="card-description">${prompt.description}</p>
+                </div>
+
+                <form id="prompt-form" class="mt-lg">
         `;
-        
-        html += '</form>';
-        html += '</div>';
-        
-        mainContent.innerHTML = html;
-        
-        // Increment usage
-        Storage.incrementUsage(promptId);
-        
-        // Attach event listeners
-        this.attachFormEventListeners(prompt);
-    },
 
-    /**
-     * Render input field based on type
-     */
-    renderInputField(input, platformInfo) {
-        let html = '<div class="form-group">';
-        
-        // Label
-        html += `<label class="form-label ${input.required ? 'form-label-required' : ''}">${input.label}</label>`;
-        
-        // Input based on type
-        switch (input.type) {
-            case 'text':
-                const defaultValue = input.name === 'platform' ? platformInfo.platform : 
-                                   input.name === 'reporter' ? platformInfo.oimName : '';
-                html += `<input type="text" name="${input.name}" class="form-input" 
-                         placeholder="${input.placeholder || ''}" 
-                         value="${defaultValue}"
-                         ${input.required ? 'required' : ''}>`;
-                break;
-                
-            case 'textarea':
-                html += `<textarea name="${input.name}" class="form-textarea" 
-                         rows="${input.rows || 4}" 
-                         placeholder="${input.placeholder || ''}" 
-                         ${input.required ? 'required' : ''}></textarea>`;
-                break;
-                
-            case 'select':
-                html += `<select name="${input.name}" class="form-select" ${input.required ? 'required' : ''}>`;
-                if (!input.required) html += '<option value="">-- Select --</option>';
-                
-                if (Array.isArray(input.options)) {
-                    input.options.forEach(option => {
-                        const optionValue = typeof option === 'string' ? option : option.value;
-                        const optionLabel = typeof option === 'string' ? option : option.label;
-                        const selected = optionValue === platformInfo.platform ? 'selected' : '';
-                        html += `<option value="${optionValue}" ${selected}>${optionLabel}</option>`;
-                    });
-                }
-                html += '</select>';
-                break;
-                
-            case 'radio':
-                html += '<div class="form-radio-group">';
-                input.options.forEach(option => {
-                    const checked = option.default ? 'checked' : '';
-                    html += `
-                        <label class="radio-option ${checked ? 'selected' : ''}">
-                            <input type="radio" name="${input.name}" value="${option.value}" ${checked} ${input.required ? 'required' : ''}>
-                            ${option.label}
-                        </label>
-                    `;
-                });
-                html += '</div>';
-                break;
-                
-            case 'checkbox':
-                html += '<div class="form-checkbox-group">';
-                input.options.forEach(option => {
-                    const checked = option.default ? 'checked' : '';
-                    html += `
-                        <label class="checkbox-option ${checked ? 'selected' : ''}">
-                            <input type="checkbox" name="${input.name}" value="${option.value}" ${checked}>
-                            ${option.label}
-                        </label>
-                    `;
-                });
-                html += '</div>';
-                break;
-                
-            case 'date':
-                const today = new Date().toISOString().split('T')[0];
-                html += `<input type="date" name="${input.name}" class="form-input" value="${today}" ${input.required ? 'required' : ''}>`;
-                break;
-                
-            case 'time':
-                const now = new Date().toTimeString().split(' ')[0].substring(0, 5);
-                html += `<input type="time" name="${input.name}" class="form-input" value="${now}" ${input.required ? 'required' : ''}>`;
-                break;
-                
-            case 'datetime-local':
-                const datetime = new Date().toISOString().slice(0, 16);
-                html += `<input type="datetime-local" name="${input.name}" class="form-input" value="${datetime}" ${input.required ? 'required' : ''}>`;
-                break;
-                
-            case 'number':
-                html += `<input type="number" name="${input.name}" class="form-input" 
-                         placeholder="${input.placeholder || ''}" 
-                         ${input.required ? 'required' : ''}>`;
-                break;
-        }
-        
-        html += '</div>';
-        return html;
-    },
+        // Render form inputs
+        prompt.inputs.forEach(input => {
+            formHtml += this._renderFormInput(input);
+        });
 
-    /**
-     * Render output (generated prompt or template)
-     */
-    renderOutput(prompt, output, isTemplate = false) {
-        const mainContent = document.getElementById('mainContent');
-        
-        // Update header
-        document.getElementById('headerTitle').textContent = prompt.title;
-        document.getElementById('headerSubtitle').textContent = isTemplate ? 'Generated Report' : 'Generated Prompt';
-        
-        let html = '<div class="output-view">';
-        
-        html += `
-            <div class="output-container">
-                <div class="output-header">
-                    <div class="output-title">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                        </svg>
-                        ${isTemplate ? '✅ Report Ready' : '✅ Prompt Generated'}
+        // For hybrid prompts with refine options
+        if (prompt.type === 'hybrid' && prompt.aiRefineOptions) {
+            formHtml += `
+                <div class="form-group">
+                    <label class="form-label">Refine Option (Optional)</label>
+                    <div class="form-radio-group">
+                        <div class="form-radio-item">
+                            <input type="radio" id="refine-none" name="refineOption" value="" checked>
+                            <label for="refine-none">No refine (use template only)</label>
+                        </div>
+                        ${prompt.aiRefineOptions.map(opt => `
+                            <div class="form-radio-item">
+                                <input type="radio" id="refine-${opt.id}" name="refineOption" value="${opt.id}">
+                                <label for="refine-${opt.id}">${opt.icon} ${opt.name}</label>
+                            </div>
+                        `).join('')}
                     </div>
                 </div>
-                <div class="output-content" id="outputContent">${Utils.escapeHTML(output)}</div>
-                <div class="output-actions">
-                    <button id="copyBtn" class="btn btn-primary">
-                        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-                            <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"/>
-                            <path d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"/>
+            `;
+        }
+
+        formHtml += `
+                    <button type="submit" class="btn btn-primary btn-block">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 5v14M19 12l-7 7-7-7"/>
+                        </svg>
+                        Generate Prompt
+                    </button>
+                </form>
+            </div>
+        `;
+
+        content.innerHTML = formHtml;
+    },
+
+    /**
+     * Render form input based on type
+     */
+    _renderFormInput(input) {
+        const required = input.required ? ' form-label-required' : '';
+        let inputHtml = '';
+
+        switch (input.type) {
+            case 'text':
+                inputHtml = `
+                    <div class="form-group">
+                        <label class="form-label${required}">${input.label}</label>
+                        <input type="text" class="form-input" name="${input.name}" 
+                               placeholder="${input.placeholder || ''}" 
+                               ${input.required ? 'required' : ''}>
+                    </div>
+                `;
+                break;
+
+            case 'textarea':
+                inputHtml = `
+                    <div class="form-group">
+                        <label class="form-label${required}">${input.label}</label>
+                        <textarea class="form-textarea" name="${input.name}" 
+                                  rows="${input.rows || 4}"
+                                  placeholder="${input.placeholder || ''}" 
+                                  ${input.required ? 'required' : ''}></textarea>
+                    </div>
+                `;
+                break;
+
+            case 'select':
+                inputHtml = `
+                    <div class="form-group">
+                        <label class="form-label${required}">${input.label}</label>
+                        <select class="form-select" name="${input.name}" ${input.required ? 'required' : ''}>
+                            ${input.options.map(opt => `
+                                <option value="${opt}">${opt}</option>
+                            `).join('')}
+                        </select>
+                    </div>
+                `;
+                break;
+
+            case 'datetime-local':
+                const now = new Date();
+                const datetime = now.toISOString().slice(0, 16);
+                inputHtml = `
+                    <div class="form-group">
+                        <label class="form-label${required}">${input.label}</label>
+                        <input type="datetime-local" class="form-input" name="${input.name}" 
+                               value="${datetime}" ${input.required ? 'required' : ''}>
+                    </div>
+                `;
+                break;
+
+            case 'radio':
+                inputHtml = `
+                    <div class="form-group">
+                        <label class="form-label${required}">${input.label}</label>
+                        <div class="form-radio-group">
+                            ${input.options.map((opt, idx) => `
+                                <div class="form-radio-item">
+                                    <input type="radio" id="${input.name}-${idx}" name="${input.name}" 
+                                           value="${opt.value}" ${opt.default ? 'checked' : ''} 
+                                           ${input.required ? 'required' : ''}>
+                                    <label for="${input.name}-${idx}">${opt.label}</label>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+                break;
+
+            case 'checkbox':
+                inputHtml = `
+                    <div class="form-group">
+                        <label class="form-label${required}">${input.label}</label>
+                        <div class="form-checkbox-group">
+                            ${input.options.map((opt, idx) => `
+                                <div class="form-checkbox-item">
+                                    <input type="checkbox" id="${input.name}-${idx}" name="${input.name}" 
+                                           value="${opt.value}" ${opt.default ? 'checked' : ''}>
+                                    <label for="${input.name}-${idx}">${opt.label}</label>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+                break;
+        }
+
+        return inputHtml;
+    },
+
+    /**
+     * Render generated prompt result
+     */
+    renderGeneratedPrompt(promptId, generatedText, inputs) {
+        const prompt = PromptsData.getPromptById(promptId);
+        if (!prompt) return;
+
+        const content = document.getElementById('app-content');
+
+        const html = `
+            <div class="fade-in">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-icon" style="background: var(--success-light);">✅</span>
+                        <h3 class="card-title">Prompt Generated!</h3>
+                    </div>
+                    <p class="card-description">Copy the prompt below and paste it into Claude or ChatGPT</p>
+                </div>
+
+                <div class="result-box mt-lg fade-in">
+                    <div class="result-header">
+                        <span class="result-title">Generated Prompt</span>
+                        <span class="badge badge-success">Ready to copy</span>
+                    </div>
+                    <div class="result-content">${Utils.escapeHtml(generatedText)}</div>
+                </div>
+
+                <div class="action-bar">
+                    <button class="btn btn-primary" id="copy-prompt-btn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                        Copy Prompt
+                    </button>
+                    <button class="btn btn-secondary" id="share-prompt-btn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="18" cy="5" r="3"></circle>
+                            <circle cx="6" cy="12" r="3"></circle>
+                            <circle cx="18" cy="19" r="3"></circle>
+                            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                        </svg>
+                        Share
+                    </button>
+                    <button class="btn btn-outline" id="new-prompt-btn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        New Prompt
+                    </button>
+                </div>
+            </div>
+        `;
+
+        content.innerHTML = html;
+
+        // Store data for button handlers
+        document.getElementById('copy-prompt-btn').dataset.text = generatedText;
+        document.getElementById('share-prompt-btn').dataset.text = generatedText;
+        document.getElementById('share-prompt-btn').dataset.title = prompt.title;
+    },
+
+    /**
+     * Render favorites page
+     */
+    renderFavorites() {
+        const content = document.getElementById('app-content');
+        const favoriteIds = Storage.getFavorites();
+
+        if (favoriteIds.length === 0) {
+            content.innerHTML = `
+                <div class="empty-state fade-in">
+                    <div class="empty-state-icon">⭐</div>
+                    <h3 class="empty-state-title">No Favorites Yet</h3>
+                    <p class="empty-state-text">Star your frequently used prompts for quick access</p>
+                    <button class="btn btn-primary" onclick="App.navigate('home')">Browse Prompts</button>
+                </div>
+            `;
+            return;
+        }
+
+        const favoritePrompts = favoriteIds
+            .map(id => PromptsData.getPromptById(id))
+            .filter(p => p !== undefined);
+
+        const html = `
+            <div class="fade-in">
+                <div class="card">
+                    <h3 class="card-title">⭐ Your Favorites</h3>
+                    <p class="card-description">${favoritePrompts.length} favorite prompt${favoritePrompts.length > 1 ? 's' : ''}</p>
+                </div>
+
+                <ul class="list mt-lg">
+                    ${favoritePrompts.map(prompt => `
+                        <li class="list-item fade-in" data-prompt-id="${prompt.id}">
+                            <span class="list-item-icon">${prompt.icon}</span>
+                            <div class="list-item-content">
+                                <div class="list-item-title">${prompt.title}</div>
+                                <div class="list-item-subtitle">${prompt.description}</div>
+                            </div>
+                        </li>
+                    `).join('')}
+                </ul>
+            </div>
+        `;
+
+        content.innerHTML = html;
+    },
+
+    /**
+     * Render history page
+     */
+    renderHistory() {
+        const content = document.getElementById('app-content');
+        const history = Storage.getHistory();
+        const count = Storage.getHistoryCount();
+        const limit = Storage.HISTORY_LIMIT;
+
+        if (history.length === 0) {
+            content.innerHTML = `
+                <div class="empty-state fade-in">
+                    <div class="empty-state-icon">📚</div>
+                    <h3 class="empty-state-title">No History Yet</h3>
+                    <p class="empty-state-text">Your generated prompts will appear here</p>
+                    <button class="btn btn-primary" onclick="App.navigate('home')">Generate Your First Prompt</button>
+                </div>
+            `;
+            return;
+        }
+
+        // Group history by date
+        const grouped = this._groupHistoryByDate(history);
+
+        let html = `
+            <div class="fade-in">
+                <div class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <h3 class="card-title">📚 History</h3>
+                            <p class="card-description">${count} of ${limit} prompts</p>
+                        </div>
+                        <div style="display: flex; gap: var(--spacing-sm);">
+                            <button class="btn btn-secondary btn-icon" id="export-history-btn" title="Export as JSON">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                            </button>
+                            <button class="btn btn-secondary btn-icon" id="clear-history-btn" title="Clear All">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-lg">
+        `;
+
+        Object.keys(grouped).forEach(dateLabel => {
+            html += `
+                <div class="mb-lg">
+                    <h4 style="margin-bottom: var(--spacing-md); color: var(--text-secondary); font-size: 0.875rem; font-weight: 600;">${dateLabel}</h4>
+                    <ul class="list">
+                        ${grouped[dateLabel].map(item => `
+                            <li class="list-item fade-in" data-history-id="${item.id}">
+                                <span class="list-item-icon">${this._getPromptIcon(item.promptId)}</span>
+                                <div class="list-item-content">
+                                    <div class="list-item-title">${item.promptTitle}</div>
+                                    <div class="list-item-subtitle">${Utils.formatTime(item.timestamp)}</div>
+                                </div>
+                                <button class="btn-icon" onclick="App.deleteHistoryItem('${item.id}'); event.stopPropagation();">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    </svg>
+                                </button>
+                            </li>
+                        `).join('')}
+                    </ul>
+                </div>
+            `;
+        });
+
+        html += `</div></div>`;
+
+        content.innerHTML = html;
+    },
+
+    /**
+     * Group history by date
+     */
+    _groupHistoryByDate(history) {
+        const grouped = {};
+        
+        history.forEach(item => {
+            const dateLabel = Utils.formatDate(item.timestamp);
+            if (!grouped[dateLabel]) {
+                grouped[dateLabel] = [];
+            }
+            grouped[dateLabel].push(item);
+        });
+
+        return grouped;
+    },
+
+    /**
+     * Get prompt icon by ID
+     */
+    _getPromptIcon(promptId) {
+        const prompt = PromptsData.getPromptById(promptId);
+        return prompt ? prompt.icon : '📝';
+    },
+
+    /**
+     * Render history detail modal
+     */
+    renderHistoryDetail(historyId) {
+        const item = Storage.getHistoryItem(historyId);
+        if (!item) return;
+
+        this.showModal(
+            `📚 ${item.promptTitle}`,
+            `
+                <div class="mb-md">
+                    <strong>Generated:</strong> ${Utils.formatDateTime(item.timestamp)}
+                </div>
+                <div class="result-box">
+                    <div class="result-content">${Utils.escapeHtml(item.generatedPrompt)}</div>
+                </div>
+                <div class="action-bar mt-lg">
+                    <button class="btn btn-primary" onclick="Utils.copyToClipboard(\`${item.generatedPrompt.replace(/`/g, '\\`')}\`).then(() => { UI.showToast('Copied!'); UI.hideModal(); })">
+                        Copy Prompt
+                    </button>
+                    <button class="btn btn-secondary" onclick="App.reuseHistoryItem('${historyId}')">
+                        Reuse Prompt
+                    </button>
+                </div>
+            `
+        );
+    },
+
+    /**
+     * MODAL MANAGEMENT
+     */
+
+    /**
+     * Show modal
+     */
+    showModal(title, content) {
+        const modal = document.getElementById('modal-overlay');
+        const modalTitle = document.getElementById('modal-title');
+        const modalContent = document.getElementById('modal-content');
+
+        modalTitle.textContent = title;
+        modalContent.innerHTML = content;
+        modal.style.display = 'flex';
+    },
+
+    /**
+     * Hide modal
+     */
+    hideModal() {
+        const modal = document.getElementById('modal-overlay');
+        modal.style.display = 'none';
+    },
+
+    /**
+     * Show share options modal
+     */
+    showShareModal(text, title) {
+        this.showModal(
+            'Share Prompt',
+            `
+                <div class="action-bar" style="flex-direction: column;">
+                    <button class="btn btn-primary btn-block" onclick="Utils.copyToClipboard(\`${text.replace(/`/g, '\\`')}\`).then(() => { UI.showToast('Copied to clipboard!'); UI.hideModal(); })">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
                         </svg>
                         Copy to Clipboard
                     </button>
-                    <button id="newPromptBtn" class="btn btn-secondary">
-                        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
+                    <button class="btn btn-secondary btn-block" onclick="Utils.shareEmail(\`${text.replace(/`/g, '\\`')}\`, '${title}'); UI.hideModal();">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                            <polyline points="22,6 12,13 2,6"></polyline>
                         </svg>
-                        New ${isTemplate ? 'Report' : 'Prompt'}
+                        Share via Email
+                    </button>
+                    <button class="btn btn-secondary btn-block" onclick="Utils.shareWhatsApp(\`${text.replace(/`/g, '\\`')}\`); UI.hideModal();">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                        </svg>
+                        Share via WhatsApp
                     </button>
                 </div>
-            </div>
-        `;
-        
-        // For hybrid prompts, show AI refine options
-        if (prompt.type === 'hybrid' && isTemplate) {
-            html += this.renderAIRefineOptions(prompt, output);
-        }
-        
-        html += '</div>';
-        
-        mainContent.innerHTML = html;
-        
-        // Save to history
-        Storage.addToHistory({
-            promptId: prompt.id,
-            promptTitle: prompt.title,
-            output: output,
-            type: isTemplate ? 'template' : 'prompt'
-        });
-        
-        // Attach event listeners
-        this.attachOutputEventListeners(prompt, output);
+            `
+        );
     },
 
     /**
-     * Render AI refine options for hybrid prompts
+     * Show history limit modal
      */
-    renderAIRefineOptions(prompt, templateOutput) {
-        if (!prompt.aiRefineOptions) return '';
-        
-        let html = `
-            <div class="modifiers-section">
-                <h3 class="modifiers-title">✨ Refine with AI</h3>
-                <div class="modifiers-grid">
-        `;
-        
-        prompt.aiRefineOptions.forEach(option => {
-            html += `
-                <button class="modifier-btn" data-refine-id="${option.id}">
-                    <div class="modifier-icon">${option.icon}</div>
-                    <div class="modifier-label">${option.name}</div>
-                </button>
-            `;
-        });
-        
-        html += `
+    showHistoryLimitModal() {
+        this.showModal(
+            '⚠️ History Full (50)',
+            `
+                <p style="margin-bottom: var(--spacing-lg);">
+                    Your history has reached 50 items. Please save your history as JSON before we clear old entries.
+                </p>
+                <div class="action-bar" style="flex-direction: column;">
+                    <button class="btn btn-primary btn-block" onclick="App.exportHistory(); UI.hideModal();">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        Save JSON First (Recommended)
+                    </button>
+                    <button class="btn btn-secondary btn-block" onclick="Storage.deleteOldestHistory(10); UI.showToast('Deleted 10 oldest items'); UI.hideModal();">
+                        Skip & Delete Oldest
+                    </button>
                 </div>
-            </div>
-        `;
-        
-        return html;
+            `
+        );
     },
 
     /**
-     * Attach home screen event listeners
+     * NOTIFICATIONS
      */
-    attachHomeEventListeners() {
-        // Search
-        const searchInput = document.getElementById('searchInput');
-        if (searchInput) {
-            searchInput.addEventListener('input', Utils.debounce((e) => {
-                this.handleGlobalSearch(e.target.value);
-            }, 300));
-        }
-        
-        // Category cards
-        document.querySelectorAll('.category-card').forEach(card => {
-            card.addEventListener('click', (e) => {
-                const categoryId = card.dataset.categoryId;
-                this.renderCategory(categoryId);
-            });
-        });
-        
-        // Prompt items
-        document.querySelectorAll('.prompt-item').forEach(item => {
-            item.addEventListener('click', (e) => {
-                // Don't trigger if clicking favorite button
-                if (e.target.closest('.btn-favorite')) return;
-                
-                const promptId = item.dataset.promptId;
-                this.renderPromptForm(promptId);
-            });
-        });
-        
-        // Favorite buttons
-        document.querySelectorAll('.btn-favorite').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const promptId = btn.dataset.promptId;
-                Storage.toggleFavorite(promptId);
-                btn.classList.toggle('active');
-                
-                const svg = btn.querySelector('svg');
-                if (btn.classList.contains('active')) {
-                    svg.setAttribute('fill', 'currentColor');
-                } else {
-                    svg.setAttribute('fill', 'none');
-                }
-            });
-        });
+
+    /**
+     * Show toast notification
+     */
+    showToast(message, type = 'default') {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.className = `toast ${type}`;
+        toast.style.display = 'block';
+
+        setTimeout(() => {
+            toast.style.display = 'none';
+        }, 3000);
     },
 
     /**
-     * Attach category view event listeners
+     * Show loading indicator
      */
-    attachCategoryEventListeners(categoryId) {
-        // Category search
-        const categorySearchInput = document.getElementById('categorySearchInput');
-        if (categorySearchInput) {
-            categorySearchInput.addEventListener('input', Utils.debounce((e) => {
-                this.handleCategorySearch(categoryId, e.target.value);
-            }, 300));
-        }
-        
-        // Prompt items
-        document.querySelectorAll('.prompt-item').forEach(item => {
-            item.addEventListener('click', (e) => {
-                if (e.target.closest('.btn-favorite')) return;
-                const promptId = item.dataset.promptId;
-                this.renderPromptForm(promptId);
-            });
-        });
-        
-        // Favorite buttons
-        document.querySelectorAll('.btn-favorite').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const promptId = btn.dataset.promptId;
-                Storage.toggleFavorite(promptId);
-                btn.classList.toggle('active');
-                
-                const svg = btn.querySelector('svg');
-                if (btn.classList.contains('active')) {
-                    svg.setAttribute('fill', 'currentColor');
-                } else {
-                    svg.setAttribute('fill', 'none');
-                }
-            });
-        });
+    showLoading() {
+        document.getElementById('loading').style.display = 'flex';
     },
 
     /**
-     * Attach form event listeners
+     * Hide loading indicator
      */
-    attachFormEventListeners(prompt) {
-        const form = document.getElementById('promptForm');
-        
-        // Radio buttons - visual feedback
-        document.querySelectorAll('.radio-option input').forEach(radio => {
-            radio.addEventListener('change', (e) => {
-                const parent = e.target.closest('.form-radio-group');
-                parent.querySelectorAll('.radio-option').forEach(opt => opt.classList.remove('selected'));
-                e.target.closest('.radio-option').classList.add('selected');
-            });
-        });
-        
-        // Checkbox - visual feedback
-        document.querySelectorAll('.checkbox-option input').forEach(checkbox => {
-            checkbox.addEventListener('change', (e) => {
-                if (e.target.checked) {
-                    e.target.closest('.checkbox-option').classList.add('selected');
-                } else {
-                    e.target.closest('.checkbox-option').classList.remove('selected');
-                }
-            });
-        });
-        
-        // Form submission
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            this.handleFormSubmit(prompt);
-        });
+    hideLoading() {
+        document.getElementById('loading').style.display = 'none';
     },
 
     /**
-     * Attach output screen event listeners
+     * SEARCH
      */
-    attachOutputEventListeners(prompt, output) {
-        // Copy button
-        const copyBtn = document.getElementById('copyBtn');
-        if (copyBtn) {
-            copyBtn.addEventListener('click', () => {
-                Clipboard.copyWithFeedback(output, copyBtn);
-            });
-        }
-        
-        // New prompt button
-        const newPromptBtn = document.getElementById('newPromptBtn');
-        if (newPromptBtn) {
-            newPromptBtn.addEventListener('click', () => {
-                this.renderPromptForm(prompt.id);
-            });
-        }
-        
-        // AI refine modifiers (for hybrid prompts)
-        document.querySelectorAll('.modifier-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const refineId = btn.dataset.refineId;
-                this.handleAIRefine(prompt, output, refineId);
-            });
-        });
-    },
 
     /**
-     * Handle form submission
+     * Handle search
      */
-    handleFormSubmit(prompt) {
-        const form = document.getElementById('promptForm');
-        const formData = new FormData(form);
-        
-        // Convert FormData to object
-        const data = {};
-        
-        // Get platform info for auto-fill
-        const platformInfo = Utils.getPlatformInfo();
-        data.reporter = platformInfo.oimName;
-        data.date = Utils.formatDate();
-        data.time = Utils.formatTime();
-        data.timestamp = Utils.formatDateTime();
-        
-        // Process each input
-        prompt.inputs.forEach(input => {
-            if (input.type === 'checkbox') {
-                // For checkboxes, get all checked values
-                const checkedValues = [];
-                formData.getAll(input.name).forEach(val => {
-                    if (val) checkedValues.push(val);
-                });
-                data[input.name] = checkedValues.join(', ');
-            } else {
-                data[input.name] = formData.get(input.name) || '';
-            }
-        });
-        
-        // Validate required fields
-        const requiredFields = prompt.inputs
-            .filter(input => input.required)
-            .map(input => input.name);
-        
-        const validation = Utils.validateForm(data, requiredFields);
-        
-        if (!validation.isValid) {
-            Utils.showToast('Please fill all required fields', 'error');
-            return;
-        }
-        
-        // Generate output based on prompt type
-        let output = '';
-        
-        if (prompt.type === 'template-only' || prompt.type === 'hybrid') {
-            // Fill template
-            output = Utils.replaceTemplateVars(prompt.template, data);
-            this.renderOutput(prompt, output, true);
-        } else if (prompt.type === 'ai-only') {
-            // Generate AI prompt
-            output = Utils.replaceTemplateVars(prompt.aiPrompt, data);
-            this.renderOutput(prompt, output, false);
-        }
-    },
-
-    /**
-     * Handle AI refine for hybrid prompts
-     */
-    handleAIRefine(prompt, templateOutput, refineId) {
-        const refineOption = prompt.aiRefineOptions.find(opt => opt.id === refineId);
-        
-        if (!refineOption) return;
-        
-        // Replace {template} with actual template output
-        const aiPrompt = refineOption.prompt.replace('{template}', templateOutput);
-        
-        // Show the AI prompt for user to copy
-        this.renderOutput(prompt, aiPrompt, false);
-        
-        Utils.showToast(`AI refinement prompt generated for: ${refineOption.name}`, 'success');
-    },
-
-    /**
-     * Handle global search
-     */
-    handleGlobalSearch(query) {
+    handleSearch(query) {
         if (!query || query.trim() === '') {
             this.renderHome();
             return;
         }
-        
-        const results = Utils.searchObjects(
-            PromptsData.prompts,
-            query,
-            ['title', 'description', 'category']
-        );
-        
-        const mainContent = document.getElementById('mainContent');
-        
-        let html = '<div class="search-results">';
-        html += `<h2 class="section-title">Search Results for "${Utils.escapeHTML(query)}" <span class="section-count">${results.length}</span></h2>`;
-        
-        if (results.length === 0) {
-            html += '<p style="text-align: center; color: var(--color-text-secondary); padding: 2rem;">No prompts found. Try different keywords.</p>';
-        } else {
-            html += '<div class="prompts-list">';
-            results.forEach(prompt => {
-                html += this.renderPromptItem(prompt, true);
-            });
-            html += '</div>';
+
+        const searchTerm = query.toLowerCase().trim();
+        const allPrompts = PromptsData.prompts.filter(prompt => {
+            return prompt.title.toLowerCase().includes(searchTerm) ||
+                   prompt.description.toLowerCase().includes(searchTerm);
+        });
+
+        const content = document.getElementById('app-content');
+
+        if (allPrompts.length === 0) {
+            content.innerHTML = `
+                <div class="empty-state fade-in">
+                    <div class="empty-state-icon">🔍</div>
+                    <h3 class="empty-state-title">No Results Found</h3>
+                    <p class="empty-state-text">Try a different search term</p>
+                </div>
+            `;
+            return;
         }
-        
-        html += '</div>';
-        mainContent.innerHTML = html;
-        
-        this.attachHomeEventListeners();
+
+        const html = `
+            <div class="fade-in">
+                <div class="search-container">
+                    <div class="search-box">
+                        <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="m21 21-4.35-4.35"></path>
+                        </svg>
+                        <input type="text" class="search-input" id="search-prompts" value="${Utils.escapeHtml(query)}" placeholder="Search prompts...">
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3 class="card-title">Search Results</h3>
+                    <p class="card-description">${allPrompts.length} prompt${allPrompts.length > 1 ? 's' : ''} found</p>
+                </div>
+
+                <ul class="list mt-lg">
+                    ${allPrompts.map(prompt => `
+                        <li class="list-item fade-in" data-prompt-id="${prompt.id}">
+                            <span class="list-item-icon">${prompt.icon}</span>
+                            <div class="list-item-content">
+                                <div class="list-item-title">${prompt.title}</div>
+                                <div class="list-item-subtitle">${prompt.description}</div>
+                            </div>
+                            ${Storage.isFavorite(prompt.id) ? 
+                                '<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" style="color: var(--primary);"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>' 
+                                : ''}
+                        </li>
+                    `).join('')}
+                </ul>
+            </div>
+        `;
+
+        content.innerHTML = html;
+
+        // Re-attach search listener
+        const searchInput = document.getElementById('search-prompts');
+        if (searchInput) {
+            searchInput.focus();
+            searchInput.addEventListener('input', Utils.debounce((e) => {
+                this.handleSearch(e.target.value);
+            }, 300));
+        }
     },
 
     /**
-     * Handle category search
+     * Update header
      */
-    handleCategorySearch(categoryId, query) {
-        const prompts = PromptsData.getPromptsByCategory(categoryId);
-        
-        const results = query && query.trim() !== '' 
-            ? Utils.searchObjects(prompts, query, ['title', 'description'])
-            : prompts;
-        
-        const promptsList = document.getElementById('promptsList');
-        
-        if (!promptsList) return;
-        
-        let html = '';
-        
-        if (results.length === 0) {
-            html = '<p style="text-align: center; color: var(--color-text-secondary); padding: 2rem;">No prompts found in this category.</p>';
-        } else {
-            results.forEach(prompt => {
-                html += this.renderPromptItem(prompt, true);
-            });
-        }
-        
-        promptsList.innerHTML = html;
-        
-        // Re-attach listeners for new items
-        this.attachCategoryEventListeners(categoryId);
+    updateHeader(title, showBack = false) {
+        document.getElementById('header-title').textContent = title;
+        document.getElementById('back-btn').style.display = showBack ? 'flex' : 'none';
+    },
+
+    /**
+     * Update navigation
+     */
+    updateNav(activeView) {
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.classList.remove('active');
+            if (item.dataset.view === activeView) {
+                item.classList.add('active');
+            }
+        });
     }
 };
 
-// Export
+// Export for module usage
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = UI;
 }

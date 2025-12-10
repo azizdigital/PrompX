@@ -393,7 +393,16 @@ REPORT TIME: {timestamp}
                     id: 'quick',
                     name: 'Quick Refine',
                     icon: '⚡',
-                    prompt: `Refine this safety incident report to professional English maintaining all facts and structure.`
+                    prompt: `Refine this safety incident report to professional English:
+
+---
+{template}
+---
+
+Maintain all facts, structure, and details while improving:
+- Language quality and clarity
+- Professional terminology
+- Consistent formatting`
                 },
                 {
                     id: 'power',
@@ -524,7 +533,16 @@ All personnel confirm understanding: ________
                     id: 'quick',
                     name: 'Quick Refine',
                     icon: '⚡',
-                    prompt: `Refine this toolbox talk to professional English while keeping it engaging.`
+                    prompt: `Refine this toolbox talk to professional English:
+
+---
+{template}
+---
+
+Keep it engaging and easy to understand while improving:
+- Language clarity
+- Safety messaging
+- Practical examples`
                 },
                 {
                     id: 'engaging',
@@ -649,13 +667,32 @@ Wishing you a safe and smooth hitch ahead with continued operational excellence.
                     id: 'quick',
                     name: 'Quick Refine',
                     icon: '⚡',
-                    prompt: `Refine to professional English maintaining structure.`
+                    prompt: `Refine this handover note to professional English:
+
+---
+{template}
+---
+
+Maintain structure and all operational details while improving:
+- Professional language
+- Clarity of critical information
+- Proper formatting`
                 },
                 {
                     id: 'executive',
                     name: 'Executive Summary',
                     icon: '📊',
-                    prompt: `Convert to concise bullet-point executive summary format.`
+                    prompt: `Convert this handover note to concise executive bullet points:
+
+---
+{template}
+---
+
+Transform to:
+- Bullet-point format
+- Focus on critical items only
+- Executive-level summary
+- Key priorities highlighted`
                 }
             ]
         },
@@ -741,13 +778,32 @@ Reported by: {reporter}`,
                     id: 'quick',
                     name: 'Quick Refine',
                     icon: '⚡',
-                    prompt: `Clean up to professional English, keep it concise.`
+                    prompt: `Refine this equipment issue report to professional English:
+
+---
+{template}
+---
+
+Clean up and improve:
+- Professional language
+- Concise but complete
+- Clear action items`
                 },
                 {
                     id: 'power',
                     name: 'Power OIM',
                     icon: '💎',
-                    prompt: `Transform to formal escalation format for management.`
+                    prompt: `Transform this equipment issue to formal escalation format:
+
+---
+{template}
+---
+
+Elevate for management:
+- Executive-level language
+- Clear business impact
+- Urgent action required
+- Management-ready format`
                 }
             ]
         },
@@ -1110,7 +1166,16 @@ Date: {timestamp}
                     id: 'quick',
                     name: 'Quick Refine',
                     icon: '⚡',
-                    prompt: `Refine to professional English maintaining all safety details.`
+                    prompt: `Refine this TD extension request to professional English:
+
+---
+{template}
+---
+
+Maintain all safety details and improve:
+- Professional language
+- Clear justification
+- Safety emphasis`
                 },
                 {
                     id: 'escalation',
@@ -1296,13 +1361,34 @@ Status: Open
                     id: 'quick',
                     name: 'Quick Refine',
                     icon: '⚡',
-                    prompt: `Refine to professional English maintaining structure.`
+                    prompt: `Refine this audit response to professional English:
+
+---
+{template}
+---
+
+Maintain structure and improve:
+- Professional language
+- Clear action items
+- Proper audit response format`
                 },
                 {
                     id: 'comprehensive',
                     name: 'Comprehensive',
                     icon: '🎯',
-                    prompt: `Expand to detailed comprehensive response with supporting rationale.`
+                    prompt: `Expand this audit response to comprehensive detailed format:
+
+---
+{template}
+---
+
+Enhance to:
+- Detailed root cause analysis
+- Supporting rationale for each action
+- Timeline justifications
+- Resource requirements explained
+- Risk assessment included
+- Verification methodology detailed`
                 }
             ]
         },
@@ -1498,7 +1584,7 @@ Make it sound like OIM asking boss, not corporate memo.`
         {
             id: 'lopc-report',
             category: 'oim-ops',
-            type: 'template-only',
+            type: 'hybrid',
             title: 'LOPC Report',
             icon: '🚨',
             description: 'Loss of Primary Containment report (WhatsApp format)',
@@ -1508,7 +1594,7 @@ Make it sound like OIM asking boss, not corporate memo.`
                     label: 'Title',
                     type: 'text',
                     required: true,
-                    placeholder: 'e.g., Hydrocarbon leak at...'
+                    placeholder: 'e.g., Hydrocarbon leak at flange'
                 },
                 {
                     name: 'time',
@@ -1521,22 +1607,64 @@ Make it sound like OIM asking boss, not corporate memo.`
                     label: 'Module/Area',
                     type: 'text',
                     required: true,
-                    placeholder: 'e.g., Process Area, Wellbay'
+                    placeholder: 'e.g., Process Module, Wellbay'
                 },
                 {
                     name: 'description',
-                    label: 'Description',
+                    label: 'Brief Description',
                     type: 'textarea',
                     required: true,
-                    placeholder: 'What happened...',
-                    rows: 4
+                    placeholder: 'Brief description of LOPC...',
+                    rows: 3
+                },
+                {
+                    name: 'pointOfLeak',
+                    label: 'Point of Leak',
+                    type: 'text',
+                    required: true,
+                    placeholder: 'e.g., Flange connection at HP separator'
+                },
+                {
+                    name: 'drawingRef',
+                    label: 'Drawing Reference',
+                    type: 'text',
+                    required: false,
+                    placeholder: 'Drawing number (optional)'
+                },
+                {
+                    name: 'leakSize',
+                    label: 'Leak Size',
+                    type: 'text',
+                    required: true,
+                    placeholder: 'e.g., Pin hole, 5mm crack'
+                },
+                {
+                    name: 'operatingPressure',
+                    label: 'Operating Pressure',
+                    type: 'text',
+                    required: true,
+                    placeholder: 'e.g., 50 barg'
+                },
+                {
+                    name: 'medium',
+                    label: 'Medium',
+                    type: 'text',
+                    required: true,
+                    placeholder: 'e.g., Crude oil, Gas, Condensate'
+                },
+                {
+                    name: 'releaseDuration',
+                    label: 'Release Duration',
+                    type: 'text',
+                    required: true,
+                    placeholder: 'e.g., 5 minutes, Immediate isolation'
                 },
                 {
                     name: 'actionTaken',
                     label: 'Action Taken',
                     type: 'textarea',
                     required: true,
-                    placeholder: 'Immediate actions...',
+                    placeholder: 'Immediate actions taken...',
                     rows: 4
                 },
                 {
@@ -1544,19 +1672,28 @@ Make it sound like OIM asking boss, not corporate memo.`
                     label: 'Way Forward',
                     type: 'textarea',
                     required: true,
-                    placeholder: 'Next steps...',
+                    placeholder: 'Next steps and permanent fix...',
                     rows: 3
                 }
             ],
-            template: `Dear PMA IC,
+            template: `*LOPC REPORT*
+Dear PMA IC,
 
 *Title:* {title}
 *Date:* {date} at {time}
 *Platform:* Irong Barat A
 *Module/Area:* {moduleArea}
 
-*Description:*
+*Brief Description:*
 {description}
+
+*LOPC Detail:*
+*Point of Leak:* {pointOfLeak}
+{if drawingRef}*Drawing Reference:* {drawingRef}{endif}
+*Leak Size:* {leakSize}
+*Operating Pressure:* {operatingPressure}
+*Medium:* {medium}
+*Release Duration:* {releaseDuration}
 
 *Action Taken:*
 {actionTaken}
@@ -1565,13 +1702,31 @@ Make it sound like OIM asking boss, not corporate memo.`
 {wayForward}
 
 Regards,
-Aziz Mohamad - OIM Irong Barat`
+Aziz Mohamad - OIM Irong Barat A`,
+            aiRefineOptions: [
+                {
+                    id: 'polish',
+                    name: 'Polish & Refine',
+                    icon: '✨',
+                    prompt: `Refine this LOPC report to professional English for PMA IC:
+
+---
+{template}
+---
+
+Improve:
+- Professional technical language
+- Clear and concise
+- Proper LOPC terminology
+- Maintain WhatsApp format`
+                }
+            ]
         },
 
         {
             id: 'emergency-report',
             category: 'oim-ops',
-            type: 'template-only',
+            type: 'hybrid',
             title: 'Emergency Report',
             icon: '🚨',
             description: 'Emergency situation report (WhatsApp format)',
@@ -1593,13 +1748,15 @@ Aziz Mohamad - OIM Irong Barat`
                     name: 'moduleArea',
                     label: 'Module/Area',
                     type: 'text',
-                    required: true
+                    required: true,
+                    placeholder: 'e.g., Living Quarter, Process Module'
                 },
                 {
                     name: 'description',
                     label: 'Description',
                     type: 'textarea',
                     required: true,
+                    placeholder: 'What happened...',
                     rows: 4
                 },
                 {
@@ -1607,6 +1764,7 @@ Aziz Mohamad - OIM Irong Barat`
                     label: 'Action Taken',
                     type: 'textarea',
                     required: true,
+                    placeholder: 'Emergency response actions...',
                     rows: 4
                 },
                 {
@@ -1614,10 +1772,12 @@ Aziz Mohamad - OIM Irong Barat`
                     label: 'Way Forward',
                     type: 'textarea',
                     required: true,
+                    placeholder: 'Next steps and follow-up...',
                     rows: 3
                 }
             ],
-            template: `Dear PMA IC,
+            template: `*EMERGENCY REPORT*
+Dear PMA IC,
 
 *Title:* {title}
 *Date:* {date} at {time}
@@ -1634,13 +1794,27 @@ Aziz Mohamad - OIM Irong Barat`
 {wayForward}
 
 Regards,
-Aziz Mohamad - OIM Irong Barat`
+Aziz Mohamad - OIM Irong Barat A`,
+            aiRefineOptions: [
+                {
+                    id: 'polish',
+                    name: 'Polish & Refine',
+                    icon: '✨',
+                    prompt: `Refine this emergency report to professional English:
+
+---
+{template}
+---
+
+Improve clarity, urgency, and professional language while maintaining WhatsApp format.`
+                }
+            ]
         },
 
         {
             id: 'medical-report',
             category: 'oim-ops',
-            type: 'template-only',
+            type: 'hybrid',
             title: 'Medical Report',
             icon: '🏥',
             description: 'Medical case report (WhatsApp format)',
@@ -1662,13 +1836,15 @@ Aziz Mohamad - OIM Irong Barat`
                     name: 'moduleArea',
                     label: 'Module/Area',
                     type: 'text',
-                    required: true
+                    required: true,
+                    placeholder: 'e.g., Living Quarter, Drill Floor'
                 },
                 {
                     name: 'description',
                     label: 'Description',
                     type: 'textarea',
                     required: true,
+                    placeholder: 'Medical case details...',
                     rows: 4
                 },
                 {
@@ -1676,6 +1852,7 @@ Aziz Mohamad - OIM Irong Barat`
                     label: 'Action Taken',
                     type: 'textarea',
                     required: true,
+                    placeholder: 'Medical treatment and response...',
                     rows: 4
                 },
                 {
@@ -1683,10 +1860,12 @@ Aziz Mohamad - OIM Irong Barat`
                     label: 'Way Forward',
                     type: 'textarea',
                     required: true,
+                    placeholder: 'Medevac, monitoring, follow-up...',
                     rows: 3
                 }
             ],
-            template: `Dear PMA IC,
+            template: `*MEDICAL REPORT*
+Dear PMA IC,
 
 *Title:* {title}
 *Date:* {date} at {time}
@@ -1703,13 +1882,27 @@ Aziz Mohamad - OIM Irong Barat`
 {wayForward}
 
 Regards,
-Aziz Mohamad - OIM Irong Barat`
+Aziz Mohamad - OIM Irong Barat A`,
+            aiRefineOptions: [
+                {
+                    id: 'polish',
+                    name: 'Polish & Refine',
+                    icon: '✨',
+                    prompt: `Refine this medical report to professional English:
+
+---
+{template}
+---
+
+Improve medical terminology, clarity, and professional language while maintaining WhatsApp format.`
+                }
+            ]
         },
 
         {
             id: 'near-miss-report',
             category: 'oim-ops',
-            type: 'template-only',
+            type: 'hybrid',
             title: 'Near-Miss Report',
             icon: '⚠️',
             description: 'Near-miss incident report (WhatsApp format)',
@@ -1731,13 +1924,15 @@ Aziz Mohamad - OIM Irong Barat`
                     name: 'moduleArea',
                     label: 'Module/Area',
                     type: 'text',
-                    required: true
+                    required: true,
+                    placeholder: 'e.g., Drill Floor, Crane area'
                 },
                 {
                     name: 'description',
                     label: 'Description',
                     type: 'textarea',
                     required: true,
+                    placeholder: 'What nearly happened...',
                     rows: 4
                 },
                 {
@@ -1745,6 +1940,7 @@ Aziz Mohamad - OIM Irong Barat`
                     label: 'Action Taken',
                     type: 'textarea',
                     required: true,
+                    placeholder: 'Immediate corrective actions...',
                     rows: 4
                 },
                 {
@@ -1752,10 +1948,12 @@ Aziz Mohamad - OIM Irong Barat`
                     label: 'Way Forward',
                     type: 'textarea',
                     required: true,
+                    placeholder: 'Preventive measures...',
                     rows: 3
                 }
             ],
-            template: `Dear PMA IC,
+            template: `*NEAR-MISS REPORT*
+Dear PMA IC,
 
 *Title:* {title}
 *Date:* {date} at {time}
@@ -1772,13 +1970,27 @@ Aziz Mohamad - OIM Irong Barat`
 {wayForward}
 
 Regards,
-Aziz Mohamad - OIM Irong Barat`
+Aziz Mohamad - OIM Irong Barat A`,
+            aiRefineOptions: [
+                {
+                    id: 'polish',
+                    name: 'Polish & Refine',
+                    icon: '✨',
+                    prompt: `Refine this near-miss report to professional English:
+
+---
+{template}
+---
+
+Improve clarity, emphasize learning points, and maintain professional WhatsApp format.`
+                }
+            ]
         },
 
         {
             id: 'incident-report',
             category: 'oim-ops',
-            type: 'template-only',
+            type: 'hybrid',
             title: 'Incident Report',
             icon: '🔴',
             description: 'Incident report (WhatsApp format)',
@@ -1800,13 +2012,15 @@ Aziz Mohamad - OIM Irong Barat`
                     name: 'moduleArea',
                     label: 'Module/Area',
                     type: 'text',
-                    required: true
+                    required: true,
+                    placeholder: 'e.g., Process Module, Utilities'
                 },
                 {
                     name: 'description',
                     label: 'Description',
                     type: 'textarea',
                     required: true,
+                    placeholder: 'Incident details...',
                     rows: 4
                 },
                 {
@@ -1814,6 +2028,7 @@ Aziz Mohamad - OIM Irong Barat`
                     label: 'Action Taken',
                     type: 'textarea',
                     required: true,
+                    placeholder: 'Response and containment actions...',
                     rows: 4
                 },
                 {
@@ -1821,10 +2036,12 @@ Aziz Mohamad - OIM Irong Barat`
                     label: 'Way Forward',
                     type: 'textarea',
                     required: true,
+                    placeholder: 'Investigation and corrective actions...',
                     rows: 3
                 }
             ],
-            template: `Dear PMA IC,
+            template: `*INCIDENT REPORT*
+Dear PMA IC,
 
 *Title:* {title}
 *Date:* {date} at {time}
@@ -1841,20 +2058,34 @@ Aziz Mohamad - OIM Irong Barat`
 {wayForward}
 
 Regards,
-Aziz Mohamad - OIM Irong Barat A`
+Aziz Mohamad - OIM Irong Barat A`,
+            aiRefineOptions: [
+                {
+                    id: 'polish',
+                    name: 'Polish & Refine',
+                    icon: '✨',
+                    prompt: `Refine this incident report to professional English:
+
+---
+{template}
+---
+
+Improve clarity, factual accuracy, and professional language while maintaining WhatsApp format.`
+                }
+            ]
         },
 
         {
             id: 'daily-report',
             category: 'oim-ops',
-            type: 'template-only',
+            type: 'hybrid',
             title: 'Daily Operations Report',
             icon: '📊',
             description: 'Daily operations summary',
             inputs: [
                 {
-                    name: 'date',
-                    label: 'Date',
+                    name: 'reportDate',
+                    label: 'Operation Date',
                     type: 'date',
                     required: true
                 },
@@ -1867,44 +2098,88 @@ Aziz Mohamad - OIM Irong Barat A`
                 },
                 {
                     name: 'safetySummary',
-                    label: 'Safety Summary',
+                    label: 'SHE Summary',
                     type: 'textarea',
                     required: true,
-                    placeholder: 'Near Miss, Incidents, UAUC counts...',
-                    rows: 2
+                    placeholder: 'Safety highlights, Near Miss, Incidents, UAUC counts...',
+                    rows: 3
                 },
                 {
                     name: 'weather',
                     label: 'Weather',
                     type: 'text',
+                    required: false,
                     placeholder: 'Fair, Rough, etc.'
                 },
                 {
                     name: 'swell',
                     label: 'Swell',
                     type: 'text',
+                    required: false,
                     placeholder: '0m'
                 },
                 {
                     name: 'wind',
                     label: 'Wind',
                     type: 'text',
+                    required: false,
                     placeholder: '0 knots'
                 },
                 {
-                    name: 'productionData',
-                    label: 'Production Data',
-                    type: 'textarea',
+                    name: 'crudeOil',
+                    label: 'Crude Oil (kbd)',
+                    type: 'text',
                     required: true,
-                    placeholder: 'Oil, Gas, Flare, Watercut...',
-                    rows: 4
+                    placeholder: 'e.g., 12.5 kbd'
+                },
+                {
+                    name: 'crudeTarget',
+                    label: 'Crude Oil Target (kbd)',
+                    type: 'text',
+                    required: true,
+                    placeholder: 'e.g., 13.0 kbd'
+                },
+                {
+                    name: 'gasInjection',
+                    label: 'Gas Injection (mmscf/d)',
+                    type: 'text',
+                    required: false,
+                    placeholder: 'e.g., 2.5 mmscf/d'
+                },
+                {
+                    name: 'gasTarget',
+                    label: 'Gas Target (mmscf/d)',
+                    type: 'text',
+                    required: false,
+                    placeholder: 'e.g., 3.0 mmscf/d'
+                },
+                {
+                    name: 'flare',
+                    label: 'Flare (mmscf/d)',
+                    type: 'text',
+                    required: false,
+                    placeholder: 'e.g., 0.1 mmscf/d'
+                },
+                {
+                    name: 'flareTarget',
+                    label: 'Flare Target (mmscf/d)',
+                    type: 'text',
+                    required: false,
+                    placeholder: 'e.g., 0.2 mmscf/d'
+                },
+                {
+                    name: 'watercut',
+                    label: 'Watercut (%)',
+                    type: 'text',
+                    required: false,
+                    placeholder: 'e.g., 45%'
                 },
                 {
                     name: 'operationsHighlight',
                     label: 'Operations Highlight',
                     type: 'textarea',
                     required: true,
-                    placeholder: 'Key points dari hari ni...',
+                    placeholder: 'Key operational points, well status, equipment status...',
                     rows: 6
                 },
                 {
@@ -1912,21 +2187,21 @@ Aziz Mohamad - OIM Irong Barat A`
                     label: 'Key Challenge',
                     type: 'textarea',
                     required: true,
-                    placeholder: 'Main challenges...',
+                    placeholder: 'Main challenges faced today...',
                     rows: 3
                 },
                 {
                     name: 'briefSummary',
                     label: 'Brief Summary',
                     type: 'textarea',
-                    required: true,
-                    placeholder: 'Overall summary...',
+                    required: false,
+                    placeholder: 'Overall day summary (optional - can use AI to generate from above info)',
                     rows: 3
                 }
             ],
             template: `Assalamualaikum FM Azri & All
 
-*IbA Operation Date:* {date}
+*IbA Operation Date:* {reportDate}
 *POB:* {pob} pax ✅
 
 *SHE*
@@ -1936,7 +2211,10 @@ Aziz Mohamad - OIM Irong Barat A`
 - Weather: {weather} | Swell: {swell} | Wind: {wind}
 
 *Production Performance*
-{productionData}
+• Crude Oil: {crudeOil} vs {crudeTarget} (Target) {if crudeOil >= crudeTarget}✅{endif}
+{if gasInjection}• Gas Injection: {gasInjection} vs {gasTarget} {if gasInjection >= gasTarget}✅{endif}{endif}
+{if flare}• Flare: {flare} vs {flareTarget} {if flare <= flareTarget}✅{endif}{endif}
+{if watercut}• Watercut: {watercut}{endif}
 
 *Operations Highlight*
 {operationsHighlight}
@@ -1944,10 +2222,40 @@ Aziz Mohamad - OIM Irong Barat A`
 *Key Challenge*
 {keyChallenge}
 
-*Brief Summary*
-{briefSummary}
+{if briefSummary}*Brief Summary*
+{briefSummary}{endif}
 
-*Aziz Mohamad - OIM Irong Barat*`
+_Aziz Mohamad - OIM Irong Barat_`,
+            aiRefineOptions: [
+                {
+                    id: 'generate-summary',
+                    name: 'Generate Brief Summary',
+                    icon: '🤖',
+                    prompt: `Based on this daily operations report, generate a concise Brief Summary section:
+
+---
+{template}
+---
+
+Create a 2-3 line executive summary that captures:
+- Overall operational status
+- Key achievements or challenges
+- Production performance vs target
+Keep it professional and suitable for senior management.`
+                },
+                {
+                    id: 'polish',
+                    name: 'Polish & Refine',
+                    icon: '✨',
+                    prompt: `Refine this daily operations report to professional English:
+
+---
+{template}
+---
+
+Improve clarity, professional language, and ensure proper WhatsApp formatting while maintaining all data.`
+                }
+            ]
         },
 
         // ═══════════════════════════════════════════════════════════

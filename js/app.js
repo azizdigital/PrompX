@@ -1,469 +1,538 @@
 /**
- * PromptForge OIM - Main Application
- * Entry point and app initialization
+ * Aziz Prompt Forge - Main Application Controller
+ * Coordinates all modules and handles app state
  */
 
 const App = {
+    // Current state
+    currentView: 'home',
+    currentCategory: null,
+    currentPrompt: null,
+    
     /**
      * Initialize the application
      */
     init() {
-        console.log('🚀 PromptForge OIM initializing...');
-        
-        // Check if running as PWA
-        this.checkPWAStatus();
-        
-        // Initialize settings if first time
-        this.initializeSettings();
-        
+        console.log('🔨 Aziz Prompt Forge - Initializing...');
+
         // Setup event listeners
-        this.setupGlobalEventListeners();
+        this.setupEventListeners();
+        
+        // Check for saved state
+        const lastView = Storage.getSetting('lastView', 'home');
         
         // Render initial view
-        this.renderInitialView();
+        this.navigate(lastView);
         
-        // Register service worker
-        this.registerServiceWorker();
-        
-        console.log('✅ PromptForge OIM ready!');
-    },
-
-    /**
-     * Check PWA installation status
-     */
-    checkPWAStatus() {
-        if (window.matchMedia('(display-mode: standalone)').matches) {
-            console.log('✅ Running as PWA');
-        } else {
-            console.log('ℹ️ Running in browser');
-        }
-    },
-
-    /**
-     * Initialize settings on first run
-     */
-    initializeSettings() {
-        const settings = Storage.getSettings();
-        
-        // Check if settings exist, if not use defaults
-        if (!settings.oimName) {
-            const defaultSettings = Storage.getDefaultSettings();
-            Storage.saveSettings(defaultSettings);
-            console.log('✅ Default settings initialized');
-        }
+        console.log('✅ App initialized');
     },
 
     /**
      * Setup global event listeners
      */
-    setupGlobalEventListeners() {
+    setupEventListeners() {
         // Back button
-        const backBtn = document.getElementById('backBtn');
-        if (backBtn) {
-            backBtn.addEventListener('click', () => {
-                this.handleBack();
+        document.getElementById('back-btn').addEventListener('click', () => {
+            this.navigateBack();
+        });
+
+        // Menu button
+        document.getElementById('menu-btn').addEventListener('click', () => {
+            this.showMenu();
+        });
+
+        // Bottom navigation
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', () => {
+                this.navigate(item.dataset.view);
             });
-        }
-        
-        // Settings button
-        const settingsBtn = document.getElementById('settingsBtn');
-        if (settingsBtn) {
-            settingsBtn.addEventListener('click', () => {
-                this.showSettings();
-            });
-        }
-        
-        // Handle browser back button
-        window.addEventListener('popstate', (e) => {
-            if (e.state) {
-                this.handleNavigation(e.state);
-            } else {
-                UI.renderHome();
+        });
+
+        // Modal close button
+        document.getElementById('modal-close').addEventListener('click', () => {
+            UI.hideModal();
+        });
+
+        // Close modal on overlay click
+        document.getElementById('modal-overlay').addEventListener('click', (e) => {
+            if (e.target.id === 'modal-overlay') {
+                UI.hideModal();
             }
         });
-        
-        // Handle online/offline status
-        window.addEventListener('online', () => {
-            Utils.showToast('✅ Back online', 'success');
+
+        // Delegate events for dynamic content
+        document.getElementById('app-content').addEventListener('click', (e) => {
+            this.handleContentClick(e);
         });
-        
-        window.addEventListener('offline', () => {
-            Utils.showToast('📵 Offline mode - All features still work!', 'info');
-        });
-        
-        // Handle app install prompt
-        let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            console.log('💾 Install prompt available');
-            // Could show custom install button here
-        });
-        
-        // Prevent accidental form submission on Enter
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA' && e.target.type !== 'submit') {
-                // Allow Enter in textareas, but prevent in other inputs
-                if (e.target.tagName === 'INPUT') {
-                    e.preventDefault();
-                }
-            }
+
+        // Handle form submissions
+        document.getElementById('app-content').addEventListener('submit', (e) => {
+            this.handleFormSubmit(e);
         });
     },
 
     /**
-     * Render initial view
+     * Handle clicks on dynamic content
      */
-    renderInitialView() {
-        // Check if there's a last visited category
-        const lastCategory = Storage.getLastCategory();
+    handleContentClick(e) {
+        const target = e.target;
+        const clickedElement = target.closest('[data-category], [data-prompt-id], [data-history-id], #copy-prompt-btn, #share-prompt-btn, #new-prompt-btn, #favorite-btn, #export-history-btn, #clear-history-btn');
+
+        if (!clickedElement) return;
+
+        // Category card clicked
+        if (clickedElement.hasAttribute('data-category')) {
+            const categoryId = clickedElement.dataset.category;
+            this.navigate('category', { categoryId });
+        }
+
+        // Prompt item clicked
+        else if (clickedElement.hasAttribute('data-prompt-id') && !clickedElement.id) {
+            const promptId = clickedElement.dataset.promptId;
+            this.navigate('prompt', { promptId });
+        }
+
+        // History item clicked
+        else if (clickedElement.hasAttribute('data-history-id')) {
+            const historyId = clickedElement.dataset.historyId;
+            UI.renderHistoryDetail(historyId);
+        }
+
+        // Copy prompt button
+        else if (clickedElement.id === 'copy-prompt-btn') {
+            const text = clickedElement.dataset.text;
+            Utils.copyToClipboard(text).then(success => {
+                if (success) {
+                    UI.showToast('Copied to clipboard!', 'success');
+                } else {
+                    UI.showToast('Failed to copy', 'error');
+                }
+            });
+        }
+
+        // Share prompt button
+        else if (clickedElement.id === 'share-prompt-btn') {
+            const text = clickedElement.dataset.text;
+            const title = clickedElement.dataset.title;
+            UI.showShareModal(text, title);
+        }
+
+        // New prompt button
+        else if (clickedElement.id === 'new-prompt-btn') {
+            this.navigate('home');
+        }
+
+        // Favorite button
+        else if (clickedElement.id === 'favorite-btn') {
+            const promptId = clickedElement.dataset.promptId;
+            this.toggleFavorite(promptId);
+        }
+
+        // Export history button
+        else if (clickedElement.id === 'export-history-btn') {
+            this.exportHistory();
+        }
+
+        // Clear history button
+        else if (clickedElement.id === 'clear-history-btn') {
+            this.confirmClearHistory();
+        }
+    },
+
+    /**
+     * Handle form submissions
+     */
+    handleFormSubmit(e) {
+        if (e.target.id === 'prompt-form') {
+            e.preventDefault();
+            this.handlePromptFormSubmit(e.target);
+        }
+    },
+
+    /**
+     * Handle prompt form submission
+     */
+    handlePromptFormSubmit(form) {
+        const formData = new FormData(form);
+        const inputs = {};
+
+        // Collect all form inputs
+        for (let [key, value] of formData.entries()) {
+            // Handle checkboxes (multiple values with same name)
+            if (inputs[key]) {
+                if (!Array.isArray(inputs[key])) {
+                    inputs[key] = [inputs[key]];
+                }
+                inputs[key].push(value);
+            } else {
+                inputs[key] = value;
+            }
+        }
+
+        // Get the prompt
+        const prompt = PromptsData.getPromptById(this.currentPrompt);
+        if (!prompt) return;
+
+        // Check if refine option selected (for hybrid prompts)
+        const refineOption = inputs.refineOption;
+        delete inputs.refineOption; // Remove from inputs
+
+        // Generate the prompt
+        let generatedText;
+        if (refineOption) {
+            generatedText = Utils.generateRefinePrompt(prompt, inputs, refineOption);
+        } else {
+            generatedText = Utils.generatePrompt(prompt, inputs);
+        }
+
+        // Check history limit before saving
+        if (Storage.isHistoryLimitReached()) {
+            UI.showHistoryLimitModal();
+            // Still show the generated prompt but don't save to history yet
+            this.currentGeneratedPrompt = {
+                promptId: prompt.id,
+                promptTitle: prompt.title,
+                inputs: inputs,
+                generatedPrompt: generatedText
+            };
+        } else {
+            // Save to history
+            const limitReached = Storage.saveHistory({
+                promptId: prompt.id,
+                promptTitle: prompt.title,
+                inputs: inputs,
+                generatedPrompt: generatedText
+            });
+
+            // Show limit modal if just reached
+            if (limitReached) {
+                UI.showHistoryLimitModal();
+            }
+        }
+
+        // Render the generated prompt
+        UI.renderGeneratedPrompt(prompt.id, generatedText, inputs);
+        UI.updateHeader(prompt.title, true);
+    },
+
+    /**
+     * Navigation
+     */
+    navigate(view, data = {}) {
+        this.currentView = view;
         
-        if (lastCategory && window.location.hash === '') {
-            // Could restore last category, but for now just show home
-            UI.renderHome();
-        } else if (window.location.hash) {
-            // Handle deep links
-            this.handleDeepLink(window.location.hash);
+        // Save current view
+        Storage.saveSetting('lastView', view);
+
+        // Update UI based on view
+        switch (view) {
+            case 'home':
+                UI.renderHome();
+                UI.updateHeader('Aziz Prompt Forge', false);
+                UI.updateNav('home');
+                this.currentCategory = null;
+                this.currentPrompt = null;
+                break;
+
+            case 'category':
+                this.currentCategory = data.categoryId;
+                const category = PromptsData.getCategoryById(data.categoryId);
+                UI.renderCategory(data.categoryId);
+                UI.updateHeader(category ? category.name : 'Category', true);
+                UI.updateNav('home');
+                break;
+
+            case 'prompt':
+                this.currentPrompt = data.promptId;
+                const prompt = PromptsData.getPromptById(data.promptId);
+                UI.renderPromptForm(data.promptId);
+                UI.updateHeader(prompt ? prompt.title : 'Prompt', true);
+                UI.updateNav('home');
+                break;
+
+            case 'favorites':
+                UI.renderFavorites();
+                UI.updateHeader('Favorites', false);
+                UI.updateNav('favorites');
+                this.currentCategory = null;
+                this.currentPrompt = null;
+                break;
+
+            case 'history':
+                UI.renderHistory();
+                UI.updateHeader('History', false);
+                UI.updateNav('history');
+                this.currentCategory = null;
+                this.currentPrompt = null;
+                break;
+        }
+
+        // Scroll to top
+        window.scrollTo(0, 0);
+    },
+
+    /**
+     * Navigate back
+     */
+    navigateBack() {
+        if (this.currentPrompt) {
+            // From prompt to category
+            if (this.currentCategory) {
+                this.navigate('category', { categoryId: this.currentCategory });
+            } else {
+                this.navigate('home');
+            }
+        } else if (this.currentCategory) {
+            // From category to home
+            this.navigate('home');
         } else {
             // Default to home
-            UI.renderHome();
+            this.navigate('home');
         }
     },
 
     /**
-     * Handle deep links (e.g., #category/oim-ops)
+     * Toggle favorite
      */
-    handleDeepLink(hash) {
-        const parts = hash.substring(1).split('/');
+    toggleFavorite(promptId) {
+        const isFavorite = Storage.toggleFavorite(promptId);
         
-        if (parts[0] === 'category' && parts[1]) {
-            UI.renderCategory(parts[1]);
-        } else if (parts[0] === 'prompt' && parts[1]) {
-            UI.renderPromptForm(parts[1]);
-        } else {
-            UI.renderHome();
+        // Update favorite button if on prompt page
+        const favoriteBtn = document.getElementById('favorite-btn');
+        if (favoriteBtn) {
+            const svg = favoriteBtn.querySelector('svg');
+            if (isFavorite) {
+                svg.setAttribute('fill', 'currentColor');
+                svg.style.color = 'var(--primary)';
+                UI.showToast('Added to favorites', 'success');
+            } else {
+                svg.setAttribute('fill', 'none');
+                svg.style.color = 'currentColor';
+                UI.showToast('Removed from favorites');
+            }
+        }
+
+        // Refresh favorites view if currently viewing
+        if (this.currentView === 'favorites') {
+            UI.renderFavorites();
         }
     },
 
     /**
-     * Handle back navigation
+     * Export history
      */
-    handleBack() {
-        // Simple back - go to home
-        // Could implement proper navigation stack later
-        UI.renderHome();
-        window.history.pushState({ view: 'home' }, '', '#');
+    exportHistory() {
+        const data = Storage.exportHistoryJSON();
+        const filename = `prompt-forge-history-${new Date().toISOString().split('T')[0]}.json`;
+        Utils.downloadJSON(data, filename);
+        UI.showToast('History exported!', 'success');
     },
 
     /**
-     * Handle navigation with state
+     * Confirm clear history
      */
-    handleNavigation(state) {
-        if (state.view === 'home') {
-            UI.renderHome();
-        } else if (state.view === 'category' && state.categoryId) {
-            UI.renderCategory(state.categoryId);
-        } else if (state.view === 'prompt' && state.promptId) {
-            UI.renderPromptForm(state.promptId);
-        } else {
-            UI.renderHome();
-        }
+    confirmClearHistory() {
+        UI.showModal(
+            '⚠️ Clear History',
+            `
+                <p style="margin-bottom: var(--spacing-lg);">
+                    Are you sure you want to clear all history? This action cannot be undone.
+                </p>
+                <p style="margin-bottom: var(--spacing-lg); color: var(--text-secondary);">
+                    Consider exporting your history first.
+                </p>
+                <div class="action-bar" style="flex-direction: column;">
+                    <button class="btn btn-secondary btn-block" onclick="App.exportHistory(); UI.hideModal();">
+                        Export First
+                    </button>
+                    <button class="btn btn-outline btn-block" style="border-color: var(--error); color: var(--error);" onclick="App.clearHistory()">
+                        Clear All History
+                    </button>
+                    <button class="btn btn-secondary btn-block" onclick="UI.hideModal();">
+                        Cancel
+                    </button>
+                </div>
+            `
+        );
     },
 
     /**
-     * Show settings modal/screen
+     * Clear history
      */
-    showSettings() {
-        const settings = Storage.getSettings();
+    clearHistory() {
+        Storage.clearHistory();
+        UI.hideModal();
+        UI.showToast('History cleared', 'success');
         
-        // Create modal HTML
-        const modalHTML = `
-            <div class="modal-backdrop" id="settingsModal">
-                <div class="modal-content" style="max-width: 600px; background: var(--color-bg-secondary); border-radius: var(--radius-xl); padding: var(--spacing-xl); max-height: 90vh; overflow-y: auto;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-xl);">
-                        <h2 style="font-size: var(--font-size-2xl); font-weight: 700; color: var(--color-text-primary);">⚙️ Settings</h2>
-                        <button id="closeSettingsBtn" class="btn-icon">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M6 18L18 6M6 6l12 12"/>
-                            </svg>
+        if (this.currentView === 'history') {
+            UI.renderHistory();
+        }
+    },
+
+    /**
+     * Delete single history item
+     */
+    deleteHistoryItem(historyId) {
+        Storage.deleteHistoryItem(historyId);
+        UI.showToast('Item deleted');
+        
+        if (this.currentView === 'history') {
+            UI.renderHistory();
+        }
+    },
+
+    /**
+     * Reuse history item
+     */
+    reuseHistoryItem(historyId) {
+        const item = Storage.getHistoryItem(historyId);
+        if (!item) return;
+
+        UI.hideModal();
+        this.navigate('prompt', { promptId: item.promptId });
+        
+        // Pre-fill form with previous inputs
+        setTimeout(() => {
+            const form = document.getElementById('prompt-form');
+            if (form) {
+                Object.keys(item.inputs).forEach(key => {
+                    const input = form.elements[key];
+                    if (input) {
+                        if (input.type === 'checkbox') {
+                            // Handle checkbox arrays
+                            const values = Array.isArray(item.inputs[key]) ? item.inputs[key] : [item.inputs[key]];
+                            form.querySelectorAll(`[name="${key}"]`).forEach(cb => {
+                                cb.checked = values.includes(cb.value);
+                            });
+                        } else if (input.type === 'radio') {
+                            // Handle radio buttons
+                            form.querySelector(`[name="${key}"][value="${item.inputs[key]}"]`).checked = true;
+                        } else {
+                            // Handle text inputs, textareas, selects
+                            input.value = item.inputs[key];
+                        }
+                    }
+                });
+            }
+        }, 100);
+    },
+
+    /**
+     * Show menu
+     */
+    showMenu() {
+        const storageInfo = Storage.getStorageInfo();
+        
+        UI.showModal(
+            '⚙️ Settings',
+            `
+                <div style="padding: var(--spacing-md) 0;">
+                    <h3 style="margin-bottom: var(--spacing-md);">Storage Info</h3>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: var(--spacing-sm);">
+                        <span>History:</span>
+                        <strong>${storageInfo.historyCount} / ${storageInfo.historyLimit}</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: var(--spacing-lg);">
+                        <span>Favorites:</span>
+                        <strong>${storageInfo.favoritesCount}</strong>
+                    </div>
+                    
+                    <div class="divider"></div>
+                    
+                    <h3 style="margin: var(--spacing-lg) 0 var(--spacing-md);">Actions</h3>
+                    <div class="action-bar" style="flex-direction: column;">
+                        <button class="btn btn-secondary btn-block" onclick="App.exportHistory(); UI.hideModal();">
+                            Export History
+                        </button>
+                        <button class="btn btn-outline btn-block" onclick="UI.hideModal(); App.showAbout();">
+                            About
+                        </button>
+                        <button class="btn btn-outline btn-block" style="border-color: var(--error); color: var(--error);" onclick="UI.hideModal(); App.confirmResetApp();">
+                            Reset App
                         </button>
                     </div>
-                    
-                    <form id="settingsForm">
-                        <div class="form-group">
-                            <label class="form-label">OIM Name</label>
-                            <input type="text" name="oimName" class="form-input" value="${settings.oimName}" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">OIM Title</label>
-                            <input type="text" name="oimTitle" class="form-input" value="${settings.oimTitle}" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">Default Platform</label>
-                            <select name="platform" class="form-select" required>
-                                <option value="IbA" ${settings.platform === 'IbA' ? 'selected' : ''}>IbA</option>
-                                <option value="IbB" ${settings.platform === 'IbB' ? 'selected' : ''}>IbB</option>
-                                <option value="IbC" ${settings.platform === 'IbC' ? 'selected' : ''}>IbC</option>
-                            </select>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label class="form-label">Boss Name (Default)</label>
-                            <input type="text" name="bossName" class="form-input" value="${settings.bossName}">
-                        </div>
-                        
-                        <div style="margin-top: var(--spacing-xl); padding-top: var(--spacing-xl); border-top: 1px solid var(--color-border);">
-                            <h3 style="font-size: var(--font-size-lg); font-weight: 600; margin-bottom: var(--spacing-md);">Data Management</h3>
-                            
-                            <button type="button" id="exportDataBtn" class="btn btn-secondary btn-block mb-md">
-                                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd"/>
-                                </svg>
-                                Export Data
-                            </button>
-                            
-                            <button type="button" id="importDataBtn" class="btn btn-secondary btn-block mb-md">
-                                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
-                                </svg>
-                                Import Data
-                            </button>
-                            <input type="file" id="importFileInput" accept=".json" style="display: none;">
-                            
-                            <button type="button" id="clearHistoryBtn" class="btn btn-outline btn-block mb-md" style="border-color: var(--color-warning); color: var(--color-warning);">
-                                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/>
-                                </svg>
-                                Clear History
-                            </button>
-                            
-                            <button type="button" id="clearAllDataBtn" class="btn btn-outline btn-block" style="border-color: var(--color-error); color: var(--color-error);">
-                                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
-                                </svg>
-                                Clear All Data
-                            </button>
-                        </div>
-                        
-                        <div style="margin-top: var(--spacing-xl); padding-top: var(--spacing-xl); border-top: 1px solid var(--color-border);">
-                            <button type="submit" class="btn btn-primary btn-block">
-                                <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                                </svg>
-                                Save Settings
-                            </button>
-                        </div>
-                    </form>
-                    
-                    <div style="margin-top: var(--spacing-xl); padding-top: var(--spacing-xl); border-top: 1px solid var(--color-border); text-align: center;">
-                        <p style="font-size: var(--font-size-sm); color: var(--color-text-tertiary);">PromptForge OIM v1.0</p>
-                        <p style="font-size: var(--font-size-xs); color: var(--color-text-tertiary); margin-top: var(--spacing-xs);">© 2025 Aziz Mohamad</p>
-                    </div>
                 </div>
-            </div>
-        `;
-        
-        // Add modal to body
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-        
-        // Add styles for modal
-        const style = document.createElement('style');
-        style.textContent = `
-            .modal-backdrop {
-                position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: rgba(10, 14, 39, 0.9);
-                backdrop-filter: blur(8px);
-                -webkit-backdrop-filter: blur(8px);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                z-index: 9999;
-                padding: var(--spacing-lg);
-                animation: fadeIn 0.2s ease-out;
-            }
-            
-            .modal-content {
-                animation: slideUp 0.3s ease-out;
-            }
-            
-            @keyframes fadeIn {
-                from { opacity: 0; }
-                to { opacity: 1; }
-            }
-            
-            @keyframes slideUp {
-                from { 
-                    opacity: 0;
-                    transform: translateY(20px);
-                }
-                to { 
-                    opacity: 1;
-                    transform: translateY(0);
-                }
-            }
-        `;
-        document.head.appendChild(style);
-        
-        // Setup event listeners for settings
-        this.setupSettingsEventListeners();
+            `
+        );
     },
 
     /**
-     * Setup settings modal event listeners
+     * Show about dialog
      */
-    setupSettingsEventListeners() {
-        const modal = document.getElementById('settingsModal');
-        const closeBtn = document.getElementById('closeSettingsBtn');
-        const settingsForm = document.getElementById('settingsForm');
-        
-        // Close button
-        if (closeBtn) {
-            closeBtn.addEventListener('click', () => {
-                modal.remove();
-            });
-        }
-        
-        // Click outside to close
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                modal.remove();
-            }
-        });
-        
-        // Save settings
-        if (settingsForm) {
-            settingsForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                
-                const formData = new FormData(settingsForm);
-                const newSettings = {
-                    oimName: formData.get('oimName'),
-                    oimTitle: formData.get('oimTitle'),
-                    platform: formData.get('platform'),
-                    bossName: formData.get('bossName'),
-                    darkMode: true,
-                    showTooltips: true
-                };
-                
-                Storage.saveSettings(newSettings);
-                Utils.showToast('Settings saved successfully!', 'success');
-                modal.remove();
-            });
-        }
-        
-        // Export data
-        const exportBtn = document.getElementById('exportDataBtn');
-        if (exportBtn) {
-            exportBtn.addEventListener('click', () => {
-                const data = Storage.exportData();
-                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `promptforge-backup-${Date.now()}.json`;
-                a.click();
-                URL.revokeObjectURL(url);
-                Utils.showToast('Data exported successfully!', 'success');
-            });
-        }
-        
-        // Import data
-        const importBtn = document.getElementById('importDataBtn');
-        const importFileInput = document.getElementById('importFileInput');
-        
-        if (importBtn && importFileInput) {
-            importBtn.addEventListener('click', () => {
-                importFileInput.click();
-            });
-            
-            importFileInput.addEventListener('change', (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    try {
-                        const data = JSON.parse(event.target.result);
-                        Storage.importData(data);
-                        Utils.showToast('Data imported successfully!', 'success');
-                        modal.remove();
-                        UI.renderHome(); // Refresh view
-                    } catch (error) {
-                        Utils.showToast('Error importing data. Invalid file format.', 'error');
-                    }
-                };
-                reader.readAsText(file);
-            });
-        }
-        
-        // Clear history
-        const clearHistoryBtn = document.getElementById('clearHistoryBtn');
-        if (clearHistoryBtn) {
-            clearHistoryBtn.addEventListener('click', () => {
-                if (confirm('Are you sure you want to clear all history? This cannot be undone.')) {
-                    Storage.clearHistory();
-                    Utils.showToast('History cleared!', 'success');
-                }
-            });
-        }
-        
-        // Clear all data
-        const clearAllDataBtn = document.getElementById('clearAllDataBtn');
-        if (clearAllDataBtn) {
-            clearAllDataBtn.addEventListener('click', () => {
-                if (confirm('⚠️ WARNING: This will delete ALL data including settings, favorites, and history. Are you absolutely sure?')) {
-                    if (confirm('Last chance! This action cannot be undone. Proceed?')) {
-                        Storage.clearAll();
-                        Utils.showToast('All data cleared!', 'success');
-                        modal.remove();
-                        UI.renderHome();
-                    }
-                }
-            });
-        }
+    showAbout() {
+        UI.showModal(
+            '🔨 About Aziz Prompt Forge',
+            `
+                <div style="padding: var(--spacing-md) 0;">
+                    <p style="margin-bottom: var(--spacing-md);">
+                        <strong>Version:</strong> 1.0.0
+                    </p>
+                    <p style="margin-bottom: var(--spacing-md);">
+                        <strong>Description:</strong> All Your AI Prompts. One Smart Hub.
+                    </p>
+                    <p style="margin-bottom: var(--spacing-md); color: var(--text-secondary);">
+                        A Progressive Web App for managing and generating AI prompts for offshore operations and professional use.
+                    </p>
+                    <div class="divider"></div>
+                    <p style="margin-top: var(--spacing-md); font-size: 0.875rem; color: var(--text-secondary);">
+                        📱 Works offline<br>
+                        📚 ${PromptsData.prompts.length} prompts in ${PromptsData.categories.length} categories<br>
+                        💾 Local storage only - your data stays private
+                    </p>
+                    <div class="divider"></div>
+                    <p style="margin-top: var(--spacing-md); font-size: 0.875rem; color: var(--text-secondary); text-align: center;">
+                        <strong>© 2025 Aziz Mohamad</strong><br>
+                        Personal Development Division
+                    </p>
+                </div>
+            `
+        );
     },
 
     /**
-     * Register service worker for PWA
+     * Confirm reset app
      */
-    registerServiceWorker() {
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/service-worker.js')
-                .then(registration => {
-                    console.log('✅ Service Worker registered:', registration.scope);
-                    
-                    // Check for updates
-                    registration.addEventListener('updatefound', () => {
-                        const newWorker = registration.installing;
-                        newWorker.addEventListener('statechange', () => {
-                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                // New version available
-                                Utils.showToast('New version available! Refresh to update.', 'info', 5000);
-                            }
-                        });
-                    });
-                })
-                .catch(error => {
-                    console.log('❌ Service Worker registration failed:', error);
-                });
-        }
+    confirmResetApp() {
+        UI.showModal(
+            '⚠️ Reset App',
+            `
+                <p style="margin-bottom: var(--spacing-lg);">
+                    This will delete all your history, favorites, and settings. This action cannot be undone.
+                </p>
+                <p style="margin-bottom: var(--spacing-lg); color: var(--error); font-weight: 600;">
+                    Are you absolutely sure?
+                </p>
+                <div class="action-bar" style="flex-direction: column;">
+                    <button class="btn btn-outline btn-block" style="border-color: var(--error); color: var(--error);" onclick="App.resetApp()">
+                        Yes, Reset Everything
+                    </button>
+                    <button class="btn btn-primary btn-block" onclick="UI.hideModal();">
+                        Cancel
+                    </button>
+                </div>
+            `
+        );
+    },
+
+    /**
+     * Reset app
+     */
+    resetApp() {
+        Storage.clearAll();
+        UI.hideModal();
+        UI.showToast('App reset complete', 'success');
+        setTimeout(() => {
+            window.location.reload();
+        }, 1000);
     }
 };
 
 // Initialize app when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => App.init());
-} else {
+document.addEventListener('DOMContentLoaded', () => {
     App.init();
-}
+});
 
-// Export
+// Export for module usage
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = App;
 }

@@ -2,98 +2,125 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="PromptForge OIM">
-    <meta name="theme-color" content="#0A0E27">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="All Your AI Prompts. One Smart Hub.">
+    <meta name="theme-color" content="#2563EB">
     
-    <title>PromptForge OIM</title>
+    <!-- iOS Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="PromptForge">
+    
+    <title>Aziz Prompt Forge</title>
     
     <!-- PWA Manifest -->
-    <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="/manifest.json">
     
-    <!-- Apple Touch Icons -->
-    <link rel="apple-touch-icon" href="icons/icon-192.png">
-    <link rel="apple-touch-icon" sizes="512x512" href="icons/icon-512.png">
+    <!-- Icons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+    <link rel="shortcut icon" href="/icons/favicon.ico">
     
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="icons/favicon.png">
-    
-    <!-- Stylesheets -->
-    <link rel="stylesheet" href="css/style.css">
-    
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-    
     <!-- App Container -->
-    <div id="app" class="app-container">
-        
+    <div id="app">
         <!-- Header -->
-        <header class="app-header">
+        <header id="app-header" class="header">
             <div class="header-content">
-                <button id="backBtn" class="btn-icon" style="display: none;">
+                <button id="back-btn" class="btn-icon" style="display: none;">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M19 12H5M12 19l-7-7 7-7"/>
                     </svg>
                 </button>
-                <div class="header-title">
-                    <h1 id="headerTitle">PromptForge OIM</h1>
-                    <p id="headerSubtitle">AI Prompt Builder for Offshore Operations</p>
-                </div>
-                <button id="settingsBtn" class="btn-icon">
+                <h1 id="header-title" class="header-title">Aziz Prompt Forge</h1>
+                <button id="menu-btn" class="btn-icon">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="3"/>
-                        <path d="M12 1v6m0 6v6m0-12a9 9 0 1 1 0 18 9 9 0 0 1 0-18z"/>
-                        <path d="M16.24 7.76l-2.12 2.12m-4.24 4.24l-2.12 2.12m8.48-8.48l-2.12 2.12m-4.24 4.24l-2.12 2.12"/>
+                        <path d="M3 12h18M3 6h18M3 18h18"/>
                     </svg>
                 </button>
             </div>
         </header>
 
-        <!-- Main Content Area -->
-        <main id="mainContent" class="main-content">
-            <!-- Content will be dynamically loaded here -->
+        <!-- Main Content -->
+        <main id="app-content" class="content">
+            <!-- Dynamic content will be rendered here -->
         </main>
 
+        <!-- Bottom Navigation -->
+        <nav id="bottom-nav" class="bottom-nav">
+            <button class="nav-item active" data-view="home">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                    <polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+                <span>Home</span>
+            </button>
+            <button class="nav-item" data-view="favorites">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                </svg>
+                <span>Favorites</span>
+            </button>
+            <button class="nav-item" data-view="history">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                </svg>
+                <span>History</span>
+            </button>
+        </nav>
+
         <!-- Footer -->
-        <footer class="app-footer">
-            <p>© 2025 Aziz Mohamad</p>
-            <p>Enterprise Solutions Division</p>
+        <footer id="app-footer" class="app-footer">
+            <p class="footer-copyright">© 2025 Aziz Mohamad</p>
+            <p class="footer-division">Personal Development Division</p>
         </footer>
-
     </div>
 
-    <!-- Loading Overlay -->
-    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
-        <div class="loading-spinner"></div>
+    <!-- Modal Container -->
+    <div id="modal-overlay" class="modal-overlay" style="display: none;">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modal-title" class="modal-title"></h2>
+                <button id="modal-close" class="btn-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <div id="modal-content" class="modal-content"></div>
+        </div>
     </div>
 
-    <!-- Toast Notifications -->
-    <div id="toastContainer" class="toast-container"></div>
+    <!-- Toast Notification -->
+    <div id="toast" class="toast" style="display: none;"></div>
+
+    <!-- Loading Indicator -->
+    <div id="loading" class="loading" style="display: none;">
+        <div class="spinner"></div>
+    </div>
 
     <!-- Scripts -->
-    <script src="js/utils.js"></script>
-    <script src="js/storage.js"></script>
-    <script src="js/clipboard.js"></script>
-    <script src="js/prompts.js"></script>
-    <script src="js/ui.js"></script>
-    <script src="js/app.js"></script>
-    
+    <script src="/js/prompts.js"></script>
+    <script src="/js/storage.js"></script>
+    <script src="/js/utils.js"></script>
+    <script src="/js/ui.js"></script>
+    <script src="/js/app.js"></script>
+
     <!-- Service Worker Registration -->
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('service-worker.js')
+                navigator.serviceWorker.register('/service-worker.js')
                     .then(reg => console.log('Service Worker registered'))
-                    .catch(err => console.log('Service Worker registration failed'));
+                    .catch(err => console.log('Service Worker registration failed:', err));
             });
         }
     </script>
-
 </body>
 </html>

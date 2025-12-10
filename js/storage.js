@@ -1,287 +1,298 @@
 /**
- * PromptForge OIM - Storage Manager
- * Handles localStorage operations for settings, favorites, history
+ * Aziz Prompt Forge - Storage Manager
+ * Handles localStorage for history, favorites, and settings
  */
 
 const Storage = {
-    // Keys
+    // Storage keys
     KEYS: {
-        SETTINGS: 'promptforge_settings',
-        FAVORITES: 'promptforge_favorites',
-        USAGE: 'promptforge_usage',
         HISTORY: 'promptforge_history',
-        LAST_CATEGORY: 'promptforge_last_category'
+        FAVORITES: 'promptforge_favorites',
+        SETTINGS: 'promptforge_settings'
     },
 
+    // History limit
+    HISTORY_LIMIT: 50,
+
     /**
-     * Get settings
+     * HISTORY MANAGEMENT
      */
-    getSettings() {
-        try {
-            const settings = localStorage.getItem(this.KEYS.SETTINGS);
-            return settings ? JSON.parse(settings) : this.getDefaultSettings();
-        } catch (e) {
-            console.error('Error reading settings:', e);
-            return this.getDefaultSettings();
+
+    /**
+     * Save a generated prompt to history
+     * @param {Object} item - History item to save
+     * @returns {boolean} - True if limit reached
+     */
+    saveHistory(item) {
+        const history = this.getHistory();
+        
+        // Add timestamp and ID if not present
+        if (!item.timestamp) {
+            item.timestamp = new Date().toISOString();
         }
-    },
+        if (!item.id) {
+            item.id = this._generateId();
+        }
 
-    /**
-     * Default settings
-     */
-    getDefaultSettings() {
-        return {
-            oimName: 'Aziz Mohamad',
-            oimTitle: 'OIM Irong Barat',
-            platform: 'IbA',
-            bossName: 'FM Azri',
-            darkMode: true,
-            showTooltips: true
-        };
-    },
+        // Add to beginning of array (most recent first)
+        history.unshift(item);
 
-    /**
-     * Save settings
-     */
-    saveSettings(settings) {
-        try {
-            localStorage.setItem(this.KEYS.SETTINGS, JSON.stringify(settings));
+        // Check if limit reached
+        if (history.length >= this.HISTORY_LIMIT) {
+            // Return true to indicate limit reached
+            localStorage.setItem(this.KEYS.HISTORY, JSON.stringify(history));
             return true;
-        } catch (e) {
-            console.error('Error saving settings:', e);
-            return false;
         }
+
+        // Save to localStorage
+        localStorage.setItem(this.KEYS.HISTORY, JSON.stringify(history));
+        return false;
     },
 
     /**
-     * Get single setting
+     * Get all history items
+     * @returns {Array} - Array of history items
      */
-    getSetting(key) {
-        const settings = this.getSettings();
-        return settings[key];
-    },
-
-    /**
-     * Update single setting
-     */
-    updateSetting(key, value) {
-        const settings = this.getSettings();
-        settings[key] = value;
-        return this.saveSettings(settings);
-    },
-
-    /**
-     * Get favorites
-     */
-    getFavorites() {
+    getHistory() {
         try {
-            const favorites = localStorage.getItem(this.KEYS.FAVORITES);
-            return favorites ? JSON.parse(favorites) : [];
-        } catch (e) {
-            console.error('Error reading favorites:', e);
+            const data = localStorage.getItem(this.KEYS.HISTORY);
+            return data ? JSON.parse(data) : [];
+        } catch (error) {
+            console.error('Error loading history:', error);
             return [];
         }
     },
 
     /**
-     * Check if prompt is favorited
+     * Get a single history item by ID
+     * @param {string} id - History item ID
+     * @returns {Object|null} - History item or null
      */
-    isFavorite(promptId) {
-        const favorites = this.getFavorites();
-        return favorites.includes(promptId);
+    getHistoryItem(id) {
+        const history = this.getHistory();
+        return history.find(item => item.id === id) || null;
     },
 
     /**
-     * Toggle favorite
+     * Delete a history item
+     * @param {string} id - History item ID
+     */
+    deleteHistoryItem(id) {
+        const history = this.getHistory();
+        const filtered = history.filter(item => item.id !== id);
+        localStorage.setItem(this.KEYS.HISTORY, JSON.stringify(filtered));
+    },
+
+    /**
+     * Clear all history
+     */
+    clearHistory() {
+        localStorage.removeItem(this.KEYS.HISTORY);
+    },
+
+    /**
+     * Delete oldest history items (for after export)
+     * @param {number} count - Number of items to delete from end
+     */
+    deleteOldestHistory(count = 10) {
+        const history = this.getHistory();
+        const remaining = history.slice(0, -count);
+        localStorage.setItem(this.KEYS.HISTORY, JSON.stringify(remaining));
+    },
+
+    /**
+     * Check if history limit reached
+     * @returns {boolean} - True if limit reached
+     */
+    isHistoryLimitReached() {
+        return this.getHistory().length >= this.HISTORY_LIMIT;
+    },
+
+    /**
+     * Get history count
+     * @returns {number} - Number of history items
+     */
+    getHistoryCount() {
+        return this.getHistory().length;
+    },
+
+    /**
+     * Export history as JSON
+     * @returns {Object} - Exportable history object
+     */
+    exportHistoryJSON() {
+        const history = this.getHistory();
+        return {
+            exportDate: new Date().toISOString(),
+            appName: 'Aziz Prompt Forge',
+            appVersion: '1.0.0',
+            totalPrompts: history.length,
+            history: history
+        };
+    },
+
+    /**
+     * FAVORITES MANAGEMENT
+     */
+
+    /**
+     * Add a prompt to favorites
+     * @param {string} promptId - Prompt ID to favorite
+     */
+    addFavorite(promptId) {
+        const favorites = this.getFavorites();
+        if (!favorites.includes(promptId)) {
+            favorites.push(promptId);
+            localStorage.setItem(this.KEYS.FAVORITES, JSON.stringify(favorites));
+        }
+    },
+
+    /**
+     * Remove a prompt from favorites
+     * @param {string} promptId - Prompt ID to unfavorite
+     */
+    removeFavorite(promptId) {
+        const favorites = this.getFavorites();
+        const filtered = favorites.filter(id => id !== promptId);
+        localStorage.setItem(this.KEYS.FAVORITES, JSON.stringify(filtered));
+    },
+
+    /**
+     * Toggle favorite status
+     * @param {string} promptId - Prompt ID
+     * @returns {boolean} - New favorite status
      */
     toggleFavorite(promptId) {
-        let favorites = this.getFavorites();
-        
-        if (favorites.includes(promptId)) {
-            favorites = favorites.filter(id => id !== promptId);
-        } else {
-            favorites.push(promptId);
-        }
-        
-        try {
-            localStorage.setItem(this.KEYS.FAVORITES, JSON.stringify(favorites));
-            return true;
-        } catch (e) {
-            console.error('Error saving favorites:', e);
+        if (this.isFavorite(promptId)) {
+            this.removeFavorite(promptId);
             return false;
+        } else {
+            this.addFavorite(promptId);
+            return true;
         }
     },
 
     /**
-     * Get usage stats
+     * Check if a prompt is favorited
+     * @param {string} promptId - Prompt ID
+     * @returns {boolean} - True if favorited
      */
-    getUsageStats() {
+    isFavorite(promptId) {
+        return this.getFavorites().includes(promptId);
+    },
+
+    /**
+     * Get all favorite prompt IDs
+     * @returns {Array} - Array of prompt IDs
+     */
+    getFavorites() {
         try {
-            const usage = localStorage.getItem(this.KEYS.USAGE);
-            return usage ? JSON.parse(usage) : {};
-        } catch (e) {
-            console.error('Error reading usage stats:', e);
+            const data = localStorage.getItem(this.KEYS.FAVORITES);
+            return data ? JSON.parse(data) : [];
+        } catch (error) {
+            console.error('Error loading favorites:', error);
+            return [];
+        }
+    },
+
+    /**
+     * Get count of favorites
+     * @returns {number} - Number of favorites
+     */
+    getFavoritesCount() {
+        return this.getFavorites().length;
+    },
+
+    /**
+     * Clear all favorites
+     */
+    clearFavorites() {
+        localStorage.removeItem(this.KEYS.FAVORITES);
+    },
+
+    /**
+     * SETTINGS MANAGEMENT
+     */
+
+    /**
+     * Save a setting
+     * @param {string} key - Setting key
+     * @param {*} value - Setting value
+     */
+    saveSetting(key, value) {
+        const settings = this.getSettings();
+        settings[key] = value;
+        localStorage.setItem(this.KEYS.SETTINGS, JSON.stringify(settings));
+    },
+
+    /**
+     * Get a setting
+     * @param {string} key - Setting key
+     * @param {*} defaultValue - Default value if not found
+     * @returns {*} - Setting value
+     */
+    getSetting(key, defaultValue = null) {
+        const settings = this.getSettings();
+        return settings[key] !== undefined ? settings[key] : defaultValue;
+    },
+
+    /**
+     * Get all settings
+     * @returns {Object} - Settings object
+     */
+    getSettings() {
+        try {
+            const data = localStorage.getItem(this.KEYS.SETTINGS);
+            return data ? JSON.parse(data) : {};
+        } catch (error) {
+            console.error('Error loading settings:', error);
             return {};
         }
     },
 
     /**
-     * Increment usage count
+     * Clear all settings
      */
-    incrementUsage(promptId) {
-        const usage = this.getUsageStats();
-        usage[promptId] = (usage[promptId] || 0) + 1;
-        
-        try {
-            localStorage.setItem(this.KEYS.USAGE, JSON.stringify(usage));
-            return true;
-        } catch (e) {
-            console.error('Error saving usage:', e);
-            return false;
-        }
+    clearSettings() {
+        localStorage.removeItem(this.KEYS.SETTINGS);
     },
 
     /**
-     * Get usage count for prompt
+     * UTILITY FUNCTIONS
      */
-    getUsageCount(promptId) {
-        const usage = this.getUsageStats();
-        return usage[promptId] || 0;
+
+    /**
+     * Generate a unique ID
+     * @returns {string} - Unique ID
+     */
+    _generateId() {
+        return 'pf_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     },
 
     /**
-     * Get most used prompts
+     * Get storage usage info
+     * @returns {Object} - Storage info
      */
-    getMostUsed(limit = 5) {
-        const usage = this.getUsageStats();
-        const sorted = Object.entries(usage)
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, limit);
-        
-        return sorted.map(([promptId, count]) => ({ promptId, count }));
-    },
-
-    /**
-     * Get history
-     */
-    getHistory() {
-        try {
-            const history = localStorage.getItem(this.KEYS.HISTORY);
-            return history ? JSON.parse(history) : [];
-        } catch (e) {
-            console.error('Error reading history:', e);
-            return [];
-        }
-    },
-
-    /**
-     * Add to history
-     */
-    addToHistory(item) {
-        let history = this.getHistory();
-        
-        // Add timestamp
-        item.timestamp = new Date().toISOString();
-        item.id = Utils.generateId();
-        
-        // Add to beginning
-        history.unshift(item);
-        
-        // Keep only last 50
-        if (history.length > 50) {
-            history = history.slice(0, 50);
-        }
-        
-        try {
-            localStorage.setItem(this.KEYS.HISTORY, JSON.stringify(history));
-            return true;
-        } catch (e) {
-            console.error('Error saving history:', e);
-            return false;
-        }
-    },
-
-    /**
-     * Clear history
-     */
-    clearHistory() {
-        try {
-            localStorage.setItem(this.KEYS.HISTORY, JSON.stringify([]));
-            return true;
-        } catch (e) {
-            console.error('Error clearing history:', e);
-            return false;
-        }
-    },
-
-    /**
-     * Export all data
-     */
-    exportData() {
+    getStorageInfo() {
         return {
-            settings: this.getSettings(),
-            favorites: this.getFavorites(),
-            usage: this.getUsageStats(),
-            history: this.getHistory(),
-            exportDate: new Date().toISOString()
+            historyCount: this.getHistoryCount(),
+            favoritesCount: this.getFavoritesCount(),
+            historyLimit: this.HISTORY_LIMIT,
+            historyLimitReached: this.isHistoryLimitReached()
         };
     },
 
     /**
-     * Import data
-     */
-    importData(data) {
-        try {
-            if (data.settings) {
-                localStorage.setItem(this.KEYS.SETTINGS, JSON.stringify(data.settings));
-            }
-            if (data.favorites) {
-                localStorage.setItem(this.KEYS.FAVORITES, JSON.stringify(data.favorites));
-            }
-            if (data.usage) {
-                localStorage.setItem(this.KEYS.USAGE, JSON.stringify(data.usage));
-            }
-            if (data.history) {
-                localStorage.setItem(this.KEYS.HISTORY, JSON.stringify(data.history));
-            }
-            return true;
-        } catch (e) {
-            console.error('Error importing data:', e);
-            return false;
-        }
-    },
-
-    /**
-     * Clear all data
+     * Clear all data (reset app)
      */
     clearAll() {
-        try {
-            Object.values(this.KEYS).forEach(key => {
-                localStorage.removeItem(key);
-            });
-            return true;
-        } catch (e) {
-            console.error('Error clearing data:', e);
-            return false;
-        }
-    },
-
-    /**
-     * Get last visited category
-     */
-    getLastCategory() {
-        return localStorage.getItem(this.KEYS.LAST_CATEGORY) || null;
-    },
-
-    /**
-     * Save last visited category
-     */
-    saveLastCategory(categoryId) {
-        localStorage.setItem(this.KEYS.LAST_CATEGORY, categoryId);
+        this.clearHistory();
+        this.clearFavorites();
+        this.clearSettings();
     }
 };
 
-// Export
+// Export for module usage
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = Storage;
 }
